@@ -299,6 +299,20 @@ body{font-family:system-ui,sans-serif;background:#0d1117;
 // ── IMPORTANT: paste your Apps Script web app URL here ────────
 var API_URL = 'https://script.google.com/macros/s/AKfycbxToEG2z9E02txZ2uMgGdHgYWadXfjJpT4AW79iUXA3k1D9tOUwj9G5pZrk5WMMe3wB/exec';
 
+// Warm up Apps Script runtime as soon as page loads
+// so the first real request hits a warm execution environment
+function warmup() {
+  fetch(API_URL, {
+    method:  'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body:    JSON.stringify({ action: 'warmup' }),
+  }).catch(function() {
+    // Warmup failures are silent
+  });
+}
+// Fire immediately — don't wait for user interaction
+warmup();
+     
 var player        = null;
 var weekData      = null;
 var selectedPicks = [];
@@ -351,6 +365,15 @@ function showApp() {
           .classList.remove('hidden');
   document.getElementById('header-sub').textContent =
     'Welcome, ' + player.name + '!';
+
+  // Show the picks tab shell immediately
+  // so the player sees the UI right away
+  document.getElementById('picks-loading')
+          .classList.remove('hidden');
+  document.getElementById('picks-content')
+          .classList.add('hidden');
+
+  // Load data in background
   loadPicksTab();
 }
 
@@ -411,11 +434,12 @@ function login() {
       player = res;
       sessionStorage.setItem('tgp_player',
         JSON.stringify(player));
+      // Show app shell immediately — data loads in background
       showApp();
     }
   );
 }
-
+     
 // ── TABS ──────────────────────────────────────────────────────
 function showTab(tab) {
   ['picks','leaderboard','rooting'].forEach(function(t) {
