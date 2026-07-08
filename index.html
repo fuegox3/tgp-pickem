@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TGP Pick'em Pool</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#0d1117;
+     color:#e6edf3;min-height:100vh}
+.container{max-width:700px;margin:0 auto;padding:20px 16px}
+.header{text-align:center;padding:28px 0 20px}
+.header h1{font-size:26px;font-weight:700;color:#fff}
+.header p{color:#8b949e;margin-top:6px;font-size:14px}
+.card{background:#161b22;border:1px solid #30363d;
+      border-radius:12px;padding:24px;margin-bottom:16px}
+.card h2{font-size:16px;font-weight:600;margin-bottom:16px;
+         color:#c9d1d9}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:13px;color:#8b949e;
+             margin-bottom:6px}
+.field input{width:100%;padding:10px 12px;border-radius:8px;
+             border:1px solid #30363d;background:#0d1117;
+             color:#e6edf3;font-size:15px}
+.field input:focus{outline:none;border-color:#388bfd}
+.btn{display:inline-block;padding:10px 20px;border-radius:8px;
+     border:none;font-size:14px;font-weight:600;cursor:pointer;
+     transition:opacity .15s}
+.btn:hover{opacity:.85}
+.btn-primary{background:#238636;color:#fff;width:100%}
+.btn-tab{background:transparent;color:#8b949e;border:none;
+         padding:8px 14px;font-size:13px;cursor:pointer;
+         border-bottom:2px solid transparent;white-space:nowrap}
+.btn-tab.active{color:#58a6ff;border-bottom-color:#58a6ff}
+.tabs{display:flex;border-bottom:1px solid #30363d;
+      margin-bottom:20px;overflow-x:auto}
+.game-row{padding:12px 0;border-bottom:1px solid #21262d;
+          display:flex;align-items:flex-start;gap:10px;
+          flex-wrap:wrap}
+.game-row:last-child{border-bottom:none}
+.game-meta{flex:1;min-width:200px}
+.game-teams{font-size:15px;font-weight:500}
+.game-info{font-size:12px;color:#8b949e;margin-top:3px}
+.game-pick{display:flex;gap:6px;flex-wrap:wrap}
+.pick-btn{padding:7px 10px;border-radius:6px;font-size:12px;
+          font-weight:500;cursor:pointer;
+          border:1px solid #30363d;background:#21262d;
+          color:#c9d1d9;transition:all .15s}
+.pick-btn:hover:not(:disabled){border-color:#388bfd;
+                                color:#58a6ff}
+.pick-btn.selected{background:#0d419d;border-color:#388bfd;
+                   color:#58a6ff}
+.pick-btn-draw{background:#1f2937;border-color:#6b7280;
+               color:#9ca3af}
+.pick-btn-draw.selected{background:#1e3a5f;
+                         border-color:#60a5fa;color:#93c5fd}
+.pick-btn:disabled{opacity:.5;cursor:not-allowed}
+.locked-badge{font-size:11px;color:#8b949e;background:#21262d;
+              padding:3px 8px;border-radius:4px}
+.league-badge{font-size:11px;padding:2px 7px;border-radius:4px;
+              font-weight:600}
+.league-nfl{background:#0d2d45;color:#58a6ff}
+.league-ncaaf{background:#2d1b45;color:#c084fc}
+.league-mlb{background:#1a2d1a;color:#4ade80}
+.league-nba{background:#2d1a1a;color:#f97316}
+.league-nhl{background:#1a1a2d;color:#818cf8}
+.league-mls{background:#1a2d2d;color:#22d3ee}
+.odds-row{font-size:11px;color:#8b949e;margin-top:4px}
+.odds-val{color:#d29922;font-weight:600}
+.picks-summary{background:#0d2d1f;border:1px solid #238636;
+               border-radius:8px;padding:14px 16px;
+               margin-bottom:16px}
+.picks-summary h3{font-size:14px;color:#3fb950;margin-bottom:8px}
+.picks-list{display:flex;flex-wrap:wrap;gap:6px}
+.pick-chip{background:#0f2d1f;border:1px solid #238636;
+           color:#3fb950;padding:4px 10px;border-radius:20px;
+           font-size:13px}
+.lb-row{display:flex;align-items:center;padding:10px 0;
+        border-bottom:1px solid #21262d;gap:10px}
+.lb-row:last-child{border-bottom:none}
+.lb-rank{width:28px;text-align:center;font-weight:700;
+         color:#8b949e;font-size:14px}
+.lb-rank.gold{color:#d29922}
+.lb-rank.silver{color:#8b949e}
+.lb-rank.bronze{color:#b36d28}
+.lb-name{flex:1;font-size:15px}
+.lb-score{font-size:14px;font-weight:600;color:#3fb950}
+.lb-badge{font-size:11px;background:#2d2000;color:#d29922;
+          border:1px solid #d29922;padding:2px 7px;
+          border-radius:4px;margin-left:6px}
+.alert{padding:12px 14px;border-radius:8px;font-size:14px;
+       margin-bottom:14px}
+.alert-error{background:#2d0f0f;color:#f85149;
+             border:1px solid #da3633}
+.alert-success{background:#0f2d1f;color:#3fb950;
+               border:1px solid #238636}
+.spinner{text-align:center;padding:40px;color:#8b949e}
+.league-header{font-size:12px;font-weight:700;color:#8b949e;
+               padding:12px 0 6px;text-transform:uppercase;
+               letter-spacing:1px;border-top:1px solid #21262d;
+               margin-top:8px}
+.logout-btn{font-size:12px;color:#8b949e;background:none;
+            border:none;cursor:pointer;padding:0}
+.logout-btn:hover{color:#f85149}
+.header-row{display:flex;justify-content:space-between;
+            align-items:center;margin-bottom:4px}
+.hidden{display:none!important}
+.countdown{font-size:12px;color:#d29922}
+
+/* Rooting Guide */
+.status-alive{background:linear-gradient(135deg,#0f2d1f,#0d2d1f);
+              border:1px solid #238636;border-radius:12px;
+              padding:20px 24px;margin-bottom:16px}
+.status-dead{background:linear-gradient(135deg,#2d0f0f,#1a0808);
+             border:1px solid #da3633;border-radius:12px;
+             padding:20px 24px;margin-bottom:16px}
+.status-shame{background:linear-gradient(135deg,#2d1f00,#1a1200);
+              border:1px solid #d29922;border-radius:12px;
+              padding:20px 24px;margin-bottom:16px}
+.status-badge{font-size:24px;font-weight:800;margin-bottom:8px}
+.status-badge.alive{color:#3fb950}
+.status-badge.dead{color:#f85149}
+.status-badge.shame{color:#d29922}
+.status-detail{font-size:14px;color:#8b949e;margin-top:4px}
+.status-detail strong{color:#e6edf3}
+.survivor-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.survivor-pill{padding:5px 12px;border-radius:20px;font-size:12px;
+               font-weight:600}
+.survivor-pill.alive{background:#0f2d1f;border:1px solid #238636;
+                     color:#3fb950}
+.survivor-pill.dead{background:#21262d;border:1px solid #30363d;
+                    color:#8b949e}
+.survivor-pill.shame{background:#2d1f00;border:1px solid #d29922;
+                     color:#d29922}
+.survivor-pill.me{box-shadow:0 0 0 2px #58a6ff}
+.field-breakdown{margin-top:8px;font-size:13px;color:#8b949e;
+                 line-height:1.8}
+.field-breakdown strong{color:#e6edf3}
+.chaos-game{padding:14px 0;border-bottom:1px solid #21262d}
+.chaos-game:last-child{border-bottom:none}
+.chaos-header{display:flex;justify-content:space-between;
+              align-items:center;margin-bottom:8px}
+.chaos-teams{font-size:14px;font-weight:600}
+.chaos-fire{font-size:18px;letter-spacing:2px}
+.chaos-bar{height:8px;border-radius:4px;background:#21262d;
+           overflow:hidden;margin-bottom:6px;display:flex}
+.chaos-bar-away{height:100%;background:#388bfd;transition:width .3s}
+.chaos-bar-home{height:100%;background:#3fb950;transition:width .3s}
+.chaos-bar-draw{height:100%;background:#d29922;transition:width .3s}
+.chaos-labels{display:flex;justify-content:space-between;
+              font-size:11px;color:#8b949e}
+.chaos-result{font-size:12px;font-weight:600;margin-top:4px;
+              padding:3px 8px;border-radius:4px;display:inline-block}
+.chaos-result.covered{background:#0f2d1f;color:#3fb950}
+.chaos-result.pending{background:#21262d;color:#8b949e}
+.chaos-result.live{background:#2d1b00;color:#d29922}
+.rooting-interest{display:flex;align-items:center;gap:8px;
+                  margin-top:6px;font-size:13px}
+.rooting-for{color:#3fb950}
+.rooting-chaos{color:#f85149}
+.rooting-neutral{color:#8b949e}
+.rooting-none{color:#484f58}
+.view-toggle{display:flex;gap:8px;margin-bottom:16px}
+.view-btn{padding:6px 16px;border-radius:20px;font-size:13px;
+          font-weight:500;cursor:pointer;border:1px solid #30363d;
+          background:#21262d;color:#8b949e;transition:all .15s}
+.view-btn.active{background:#0d2d45;border-color:#388bfd;
+                 color:#58a6ff}
+.refresh-row{display:flex;justify-content:space-between;
+             align-items:center;margin-bottom:12px}
+.refresh-info{font-size:12px;color:#484f58}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <div class="header-row">
+      <span></span>
+      <h1>🏈 TGP Pick'em Pool</h1>
+      <button class="logout-btn hidden" id="logout-btn"
+              onclick="logout()">Sign out</button>
+    </div>
+    <p id="header-sub">Beat the spread. Win the week.</p>
+  </div>
+
+  <!-- LOGIN -->
+  <div id="view-login" class="card">
+    <h2>Sign In</h2>
+    <div id="login-error" class="alert alert-error hidden"></div>
+    <div class="field">
+      <label>Your name</label>
+      <input type="text" id="input-name"
+             placeholder="As registered by admin"
+             autocomplete="off">
+    </div>
+    <div class="field">
+      <label>PIN</label>
+      <input type="password" id="input-pin"
+             placeholder="4-digit PIN" maxlength="6">
+    </div>
+    <button class="btn btn-primary" onclick="login()"
+            id="login-btn">Sign In</button>
+  </div>
+
+  <!-- MAIN APP -->
+  <div id="view-app" class="hidden">
+    <div class="tabs">
+      <button class="btn-tab active" id="tab-picks"
+              onclick="showTab('picks')">Make Picks</button>
+      <button class="btn-tab" id="tab-leaderboard"
+              onclick="showTab('leaderboard')">
+        Leaderboard</button>
+      <button class="btn-tab hidden" id="tab-rooting"
+              onclick="showTab('rooting')">
+        🔥 Rooting Guide</button>
+    </div>
+
+    <!-- PICKS TAB -->
+    <div id="view-picks">
+      <div id="picks-loading" class="spinner">
+        Loading games...</div>
+      <div id="picks-content" class="hidden">
+        <div id="picks-alert" class="hidden"></div>
+        <div id="picks-summary" class="picks-summary hidden">
+          <h3>Your picks
+            (<span id="pick-count">0</span>/6)</h3>
+          <div class="picks-list" id="picks-list"></div>
+        </div>
+        <div class="card">
+          <h2>Week <span id="week-num"></span> Games</h2>
+          <div id="games-list"></div>
+        </div>
+        <div id="submit-area" class="hidden">
+          <button class="btn btn-primary" id="submit-btn"
+                  onclick="submitPicks()">Save Picks</button>
+          <p style="font-size:12px;color:#8b949e;
+                    text-align:center;margin-top:8px">
+            Tue–Fri games lock at kickoff.
+            All others lock Saturday noon ET.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEADERBOARD TAB -->
+    <div id="view-leaderboard" class="hidden">
+      <div id="lb-loading" class="spinner">Loading...</div>
+      <div id="lb-content" class="hidden">
+        <div class="card">
+          <h2>Week <span id="lb-week-num"></span>
+            Standings</h2>
+          <div id="lb-weekly"></div>
+        </div>
+        <div class="card">
+          <h2>Season Standings</h2>
+          <div id="lb-season"></div>
+        </div>
+        <div id="lb-allpicks" class="card hidden">
+          <h2>Everyone's Picks This Week</h2>
+          <div id="lb-picks-grid"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROOTING GUIDE TAB -->
+    <div id="view-rooting" class="hidden">
+      <div id="rg-loading" class="spinner">
+        Calculating chaos...</div>
+      <div id="rg-content" class="hidden">
+        <div id="rg-status"></div>
+        <div class="card">
+          <h2>The Field</h2>
+          <div id="rg-field"></div>
+        </div>
+        <div class="card">
+          <div class="refresh-row">
+            <h2 style="margin-bottom:0">Games</h2>
+            <span class="refresh-info"
+                  id="rg-refresh-info"></span>
+          </div>
+          <div class="view-toggle">
+            <button class="view-btn active" id="vbtn-chaos"
+                    onclick="setGameView('chaos')">
+              🔥 Chaos Rankings</button>
+            <button class="view-btn" id="vbtn-rooting"
+                    onclick="setGameView('rooting')">
+              🎯 My Rooting Guide</button>
+          </div>
+          <div id="rg-games"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── IMPORTANT: paste your Apps Script web app URL here ────────
+var API_URL = 'YOUR_APPS_SCRIPT_URL_HERE';
+
+var player        = null;
+var weekData      = null;
+var selectedPicks = [];
+var rgData        = null;
+var rgView        = 'chaos';
+var rgRefreshTimer = null;
+var rgCountdown   = 60;
+
+// ── On load: check sessionStorage for existing session ────────
+window.onload = function() {
+  var saved = sessionStorage.getItem('tgp_player');
+  if (saved) {
+    try {
+      player = JSON.parse(saved);
+      showApp();
+    } catch(e) {
+      sessionStorage.removeItem('tgp_player');
+      showLogin();
+    }
+  } else {
+    showLogin();
+  }
+  document.getElementById('input-pin')
+    .addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { login(); }
+    });
+  document.getElementById('input-name')
+    .addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        document.getElementById('input-pin').focus();
+      }
+    });
+};
+
+function showLogin() {
+  document.getElementById('view-login')
+          .classList.remove('hidden');
+  document.getElementById('view-app')
+          .classList.add('hidden');
+  document.getElementById('logout-btn')
+          .classList.add('hidden');
+}
+
+function showApp() {
+  document.getElementById('view-login')
+          .classList.add('hidden');
+  document.getElementById('view-app')
+          .classList.remove('hidden');
+  document.getElementById('logout-btn')
+          .classList.remove('hidden');
+  document.getElementById('header-sub').textContent =
+    'Welcome, ' + player.name + '!';
+  loadPicksTab();
+}
+
+function logout() {
+  sessionStorage.removeItem('tgp_player');
+  player = null;
+  weekData = null;
+  selectedPicks = [];
+  stopRgRefresh();
+  document.getElementById('input-name').value = '';
+  document.getElementById('input-pin').value  = '';
+  showLogin();
+}
+
+// ── API call via fetch ────────────────────────────────────────
+function api(payload, cb) {
+  fetch(API_URL, {
+    method:  'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body:    JSON.stringify(payload),
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) { cb(data); })
+  .catch(function(err) {
+    cb({ success: false,
+         error: err.message || 'Network error.' });
+  });
+}
+
+// ── LOGIN ─────────────────────────────────────────────────────
+function login() {
+  var name = document.getElementById('input-name')
+             .value.trim();
+  var pin  = document.getElementById('input-pin')
+             .value.trim();
+  var err  = document.getElementById('login-error');
+  err.classList.add('hidden');
+
+  if (!name || !pin) {
+    err.textContent = 'Please enter your name and PIN.';
+    err.classList.remove('hidden');
+    return;
+  }
+
+  var btn = document.getElementById('login-btn');
+  btn.disabled    = true;
+  btn.textContent = 'Signing in...';
+
+  api({ action: 'login', name: name, pin: pin },
+    function(res) {
+      btn.disabled    = false;
+      btn.textContent = 'Sign In';
+      if (!res.success) {
+        err.textContent = res.error;
+        err.classList.remove('hidden');
+        return;
+      }
+      player = res;
+      sessionStorage.setItem('tgp_player',
+        JSON.stringify(player));
+      showApp();
+    }
+  );
+}
+
+// ── TABS ──────────────────────────────────────────────────────
+function showTab(tab) {
+  ['picks','leaderboard','rooting'].forEach(function(t) {
+    document.getElementById('view-' + t)
+      .classList.toggle('hidden', t !== tab);
+    document.getElementById('tab-' + t)
+      .classList.toggle('active', t === tab);
+  });
+  if (tab === 'leaderboard') { loadLeaderboard(); }
+  if (tab === 'rooting')     { loadRoutingGuide(); }
+  if (tab !== 'rooting')     { stopRgRefresh(); }
+}
+
+// ── PICKS TAB ─────────────────────────────────────────────────
+function loadPicksTab() {
+  document.getElementById('picks-loading')
+          .classList.remove('hidden');
+  document.getElementById('picks-content')
+          .classList.add('hidden');
+
+  api({ action:'getWeekData', playerId:player.playerId },
+    function(res) {
+      document.getElementById('picks-loading')
+              .classList.add('hidden');
+      if (!res.success) {
+        showAlert('picks-alert', res.error, 'error');
+        return;
+      }
+      weekData      = res;
+      selectedPicks = res.myPicks.slice();
+      renderGames(res);
+      document.getElementById('picks-content')
+              .classList.remove('hidden');
+
+      // Show Rooting Guide tab after Saturday noon
+      if (Date.now() >= getThisSaturdayNoon()) {
+        document.getElementById('tab-rooting')
+                .classList.remove('hidden');
+      }
+    }
+  );
+}
+
+function getThisSaturdayNoon() {
+  var now  = new Date();
+  var days = (6 - now.getDay() + 7) % 7;
+  var sat  = new Date(now);
+  sat.setDate(sat.getDate() + days);
+  sat.setHours(12, 0, 0, 0);
+  return sat.getTime();
+}
+
+function renderGames(data) {
+  document.getElementById('week-num').textContent = data.week;
+  var list = document.getElementById('games-list');
+  list.innerHTML = '';
+  var now = Date.now(), anyEditable = false;
+  var leagues = ['NFL','NCAAF','MLB','NBA','NHL','MLS'];
+  var grouped = {};
+  leagues.forEach(function(l) { grouped[l] = []; });
+  data.games.forEach(function(g) {
+    if (!grouped[g.league]) { grouped[g.league] = []; }
+    grouped[g.league].push(g);
+  });
+
+  leagues.forEach(function(league) {
+    var lg = grouped[league];
+    if (!lg || lg.length === 0) { return; }
+    var hdr = document.createElement('div');
+    hdr.className   = 'league-header';
+    hdr.textContent = league;
+    list.appendChild(hdr);
+
+    lg.forEach(function(g) {
+      var locked = now >= g.deadline ||
+                   g.status === 'final';
+      if (!locked) { anyEditable = true; }
+      var isMls = g.gameType === 'moneyline';
+      var lc    = 'league-' + g.league.toLowerCase();
+      var kickStr = new Date(g.kickoff).toLocaleString(
+        'en-US', {
+          weekday:'short', month:'short', day:'numeric',
+          hour:'numeric', minute:'2-digit',
+          timeZoneName:'short',
+        });
+      var spreadStr = isMls ? 'Moneyline' :
+        (g.spread === 'TBD' ? 'Line TBD' :
+          g.favoredTeam + ' ' + g.spread);
+      var scoreStr = '';
+      if (g.status === 'final') {
+        scoreStr = ' · Final: ' +
+          g.awayScore + '-' + g.homeScore;
+        if (g.result) {
+          scoreStr += ' (' + g.result + ')';
+        }
+      } else if (g.status === 'in_progress') {
+        scoreStr = ' · Live: ' +
+          g.awayScore + '-' + g.homeScore;
+      }
+
+      var row  = document.createElement('div');
+      row.className = 'game-row';
+      var meta = document.createElement('div');
+      meta.className = 'game-meta';
+      meta.innerHTML =
+        '<div class="game-teams">' +
+        '<span class="league-badge ' + lc + '">' +
+        g.league + '</span> ' +
+        g.awayTeam + ' @ ' + g.homeTeam + '</div>' +
+        '<div class="game-info">' + spreadStr +
+        ' · ' + kickStr + scoreStr + '</div>';
+
+      if (isMls && !locked) {
+        meta.innerHTML +=
+          '<div class="odds-row">' +
+          g.awayTeam + ': <span class="odds-val">' +
+          (g.oddsAway||'N/A') + '</span>  ' +
+          'Draw: <span class="odds-val">' +
+          (g.oddsDraw||'N/A') + '</span>  ' +
+          g.homeTeam + ': <span class="odds-val">' +
+          (g.oddsHome||'N/A') + '</span></div>';
+      }
+      if (!locked) {
+        meta.innerHTML +=
+          '<div class="game-info countdown">Locks: ' +
+          new Date(g.deadline).toLocaleString('en-US', {
+            weekday:'short', month:'short', day:'numeric',
+            hour:'numeric', minute:'2-digit',
+          }) + '</div>';
+      }
+      row.appendChild(meta);
+
+      var pickArea = document.createElement('div');
+      pickArea.className = 'game-pick';
+
+      if (locked) {
+        var badge = document.createElement('span');
+        badge.className   = 'locked-badge';
+        badge.textContent = g.status === 'final'
+          ? 'Final' : 'Locked';
+        pickArea.appendChild(badge);
+        if (g.result && g.result !== '') {
+          var res = document.createElement('span');
+          res.className   = 'locked-badge';
+          res.style.color = '#3fb950';
+          res.textContent = '✓ ' + g.result;
+          pickArea.appendChild(res);
+        }
+      } else if (isMls) {
+        var drawKey = 'Draw:' + g.awayTeam;
+        [
+          { label: g.awayTeam, key: g.awayTeam },
+          { label: 'Draw',     key: drawKey    },
+          { label: g.homeTeam, key: g.homeTeam },
+        ].forEach(function(opt) {
+          var btn   = document.createElement('button');
+          var isSel = selectedPicks.indexOf(opt.key) !== -1;
+          btn.className = 'pick-btn' +
+            (opt.label === 'Draw' ? ' pick-btn-draw' : '') +
+            (isSel ? ' selected' : '');
+          btn.textContent = opt.label;
+          btn.dataset.key = opt.key;
+          btn.onclick = function() {
+            toggleMlsPick(opt.key, btn, g);
+          };
+          if (selectedPicks.length >= 6 && !isSel) {
+            btn.disabled = true;
+          }
+          pickArea.appendChild(btn);
+        });
+      } else {
+        [g.awayTeam, g.homeTeam].forEach(function(team) {
+          var btn   = document.createElement('button');
+          var isSel = selectedPicks.indexOf(team) !== -1;
+          btn.className = 'pick-btn' +
+            (isSel ? ' selected' : '');
+          btn.textContent = team;
+          btn.onclick = function() {
+            togglePick(team, btn, g, data);
+          };
+          if (selectedPicks.length >= 6 && !isSel) {
+            btn.disabled = true;
+          }
+          pickArea.appendChild(btn);
+        });
+      }
+
+      row.appendChild(pickArea);
+      list.appendChild(row);
+    });
+  });
+
+  updatePicksSummary();
+  document.getElementById('submit-area')
+    .classList.toggle('hidden', !anyEditable);
+}
+
+function togglePick(team, btn, game, data) {
+  var idx = selectedPicks.indexOf(team);
+  if (idx !== -1) {
+    selectedPicks.splice(idx, 1);
+    btn.classList.remove('selected');
+  } else {
+    if (selectedPicks.length >= 6) { return; }
+    var other = game.awayTeam === team
+      ? game.homeTeam : game.awayTeam;
+    var oi = selectedPicks.indexOf(other);
+    if (oi !== -1) {
+      selectedPicks.splice(oi, 1);
+      document.querySelectorAll('.pick-btn')
+        .forEach(function(b) {
+          if (b.textContent === other) {
+            b.classList.remove('selected');
+          }
+        });
+    }
+    selectedPicks.push(team);
+    btn.classList.add('selected');
+  }
+  updatePicksSummary();
+  refreshButtonStates();
+}
+
+function toggleMlsPick(key, btn, game) {
+  var idx = selectedPicks.indexOf(key);
+  if (idx !== -1) {
+    selectedPicks.splice(idx, 1);
+    btn.classList.remove('selected');
+  } else {
+    if (selectedPicks.length >= 6) { return; }
+    [game.awayTeam,'Draw:'+game.awayTeam,game.homeTeam]
+      .forEach(function(k) {
+        var ki = selectedPicks.indexOf(k);
+        if (ki !== -1) {
+          selectedPicks.splice(ki, 1);
+          document.querySelectorAll('[data-key="'+k+'"]')
+            .forEach(function(b) {
+              b.classList.remove('selected');
+            });
+        }
+      });
+    selectedPicks.push(key);
+    btn.classList.add('selected');
+  }
+  updatePicksSummary();
+  refreshButtonStates();
+}
+
+function updatePicksSummary() {
+  var count     = selectedPicks.length;
+  var summary   = document.getElementById('picks-summary');
+  var listEl    = document.getElementById('picks-list');
+  var countEl   = document.getElementById('pick-count');
+  var submitBtn = document.getElementById('submit-btn');
+  countEl.textContent = count;
+  summary.classList.toggle('hidden', count === 0);
+  listEl.innerHTML = selectedPicks.map(function(p) {
+    var label = p.indexOf('Draw:') === 0
+      ? 'Draw (' + p.split(':')[1] + ')' : p;
+    return '<span class="pick-chip">' + label + '</span>';
+  }).join('');
+  if (submitBtn) {
+    submitBtn.textContent = count === 6
+      ? 'Save All 6 Picks'
+      : 'Save ' + count + ' Pick' + (count !== 1 ? 's' : '');
+  }
+}
+
+function refreshButtonStates() {
+  document.querySelectorAll('.pick-btn:not(:disabled)')
+    .forEach(function(btn) {
+      var key   = btn.dataset.key || btn.textContent;
+      var isSel = selectedPicks.indexOf(key) !== -1;
+      btn.disabled = !isSel && selectedPicks.length >= 6;
+    });
+}
+
+function submitPicks() {
+  if (selectedPicks.length === 0) {
+    showAlert('picks-alert',
+      'Select at least one pick before saving.', 'error');
+    return;
+  }
+  var btn = document.getElementById('submit-btn');
+  btn.disabled    = true;
+  btn.textContent = 'Saving...';
+  api({
+    action:   'submitPicks',
+    playerId: player.playerId,
+    picks:    selectedPicks,
+  }, function(res) {
+    btn.disabled = false;
+    updatePicksSummary();
+    showAlert('picks-alert',
+      res.success ? res.message : res.error,
+      res.success ? 'success' : 'error');
+  });
+}
+
+// ── LEADERBOARD ───────────────────────────────────────────────
+function loadLeaderboard() {
+  document.getElementById('lb-loading')
+          .classList.remove('hidden');
+  document.getElementById('lb-content')
+          .classList.add('hidden');
+  api({
+    action:    'getLeaderboard',
+    playerId:  player.playerId,
+    showPicks: true,
+  }, function(res) {
+    document.getElementById('lb-loading')
+            .classList.add('hidden');
+    if (!res.success) { return; }
+    document.getElementById('lb-week-num')
+            .textContent = res.week;
+    renderLbList('lb-weekly', res.weekly,  true);
+    renderLbList('lb-season', res.season, false);
+    if (res.weekOver && res.allPicks.length > 0) {
+      renderAllPicks(res.allPicks);
+      document.getElementById('lb-allpicks')
+              .classList.remove('hidden');
+    }
+    document.getElementById('lb-content')
+            .classList.remove('hidden');
+  });
+}
+
+function renderLbList(elId, rows, showAllSix) {
+  var el = document.getElementById(elId);
+  if (!rows || rows.length === 0) {
+    el.innerHTML =
+      '<p style="color:#8b949e;font-size:14px">' +
+      'No data yet.</p>';
+    return;
+  }
+  el.innerHTML = rows.map(function(r) {
+    var rc = r.rank===1?'gold':r.rank===2?'silver':
+             r.rank===3?'bronze':'';
+    var badge = (showAllSix && r.allSix)
+      ? '<span class="lb-badge">WINNER</span>' : '';
+    var score = showAllSix
+      ? r.correct + '/6'
+      : r.correct + ' correct · ' + r.pct;
+    return '<div class="lb-row">' +
+      '<span class="lb-rank ' + rc + '">' +
+      r.rank + '</span>' +
+      '<span class="lb-name">' + r.name + badge + '</span>' +
+      '<span class="lb-score">' + score + '</span>' +
+      '</div>';
+  }).join('');
+}
+
+function renderAllPicks(allPicks) {
+  var grid = document.getElementById('lb-picks-grid');
+  allPicks.sort(function(a,b) {
+    return (b.correct||0) - (a.correct||0);
+  });
+  grid.innerHTML = allPicks.map(function(p) {
+    var chips = p.picks.map(function(pk) {
+      var label = pk.indexOf('Draw:') === 0
+        ? 'Draw (' + pk.split(':')[1] + ')' : pk;
+      return '<span class="pick-chip">' + label + '</span>';
+    }).join('');
+    return '<div class="lb-row" ' +
+      'style="flex-wrap:wrap;gap:6px">' +
+      '<span class="lb-name" style="width:100%">' +
+      p.name +
+      ' <span style="color:#8b949e;font-size:13px">(' +
+      (p.correct||0) + '/6 correct)</span></span>' +
+      chips + '</div>';
+  }).join('');
+}
+
+// ── ROOTING GUIDE ─────────────────────────────────────────────
+function loadRoutingGuide(silent) {
+  if (!silent) {
+    document.getElementById('rg-loading')
+            .classList.remove('hidden');
+    document.getElementById('rg-content')
+            .classList.add('hidden');
+  }
+  api({
+    action:   'getRoutingGuide',
+    playerId: player.playerId,
+  }, function(res) {
+    document.getElementById('rg-loading')
+            .classList.add('hidden');
+    if (!res.success) {
+      if (res.notYet) {
+        document.getElementById('rg-content').innerHTML =
+          '<div class="card" ' +
+          'style="text-align:center;padding:40px">' +
+          '<div style="font-size:48px;margin-bottom:16px">' +
+          '🔒</div>' +
+          '<div style="font-size:16px;font-weight:600;' +
+          'color:#c9d1d9;margin-bottom:8px">Not yet!</div>' +
+          '<div style="font-size:14px;color:#8b949e">' +
+          'The Rooting Guide unlocks at Saturday noon ' +
+          'when picks are revealed.</div></div>';
+        document.getElementById('rg-content')
+                .classList.remove('hidden');
+      }
+      return;
+    }
+    rgData = res;
+    renderRoutingGuide(res);
+    document.getElementById('rg-content')
+            .classList.remove('hidden');
+    startRgRefresh();
+  });
+}
+
+function renderRoutingGuide(data) {
+  renderMyStatus(data);
+  renderField(data);
+  renderGamesView(data);
+  updateRefreshInfo();
+}
+
+function renderMyStatus(data) {
+  var el = document.getElementById('rg-status');
+  var me = data.me;
+  if (!me) { el.innerHTML = ''; return; }
+  var html = '';
+  if (me.pickCount < 6) {
+    html = '<div class="status-shame">' +
+      '<div class="status-badge shame">' +
+      '😬 You Did Not Submit 6 Picks</div>' +
+      '<div class="status-detail">You submitted ' +
+      '<strong>' + me.pickCount + '/6</strong> picks ' +
+      'and are eliminated for the week. ' +
+      'Don\'t let this happen again.</div></div>';
+  } else if (me.eliminated) {
+    html = '<div class="status-dead">' +
+      '<div class="status-badge dead">💀 Eliminated</div>' +
+      '<div class="status-detail">You got ' +
+      '<strong>' + me.correct + '/6</strong> correct ' +
+      'and are out for the week. Better luck next week.' +
+      '</div></div>';
+  } else {
+    var rem     = countMyRemaining(data);
+    var needed  = 6 - me.correct;
+    var needStr = needed === 1
+      ? 'one more correct pick'
+      : needed + ' more correct picks';
+    html = '<div class="status-alive">' +
+      '<div class="status-badge alive">' +
+      '✅ Still Alive</div>' +
+      '<div class="status-detail">' +
+      '<strong>' + me.correct + '/6</strong> correct · ' +
+      '<strong>' + rem + '</strong> game' +
+      (rem !== 1 ? 's' : '') + ' remaining · ' +
+      'Need ' + needStr + ' to win the week</div></div>';
+  }
+  el.innerHTML = html;
+}
+
+function countMyRemaining(data) {
+  if (!data.me) { return 0; }
+  var count = 0;
+  data.me.picks.forEach(function(pick) {
+    (data.gamesByChoas || []).forEach(function(g) {
+      if ((pick === g.awayTeam ||
+           pick === g.homeTeam ||
+           pick === 'Draw:' + g.awayTeam) &&
+           g.status !== 'final') { count++; }
+    });
+  });
+  return count;
+}
+
+function renderField(data) {
+  var el        = document.getElementById('rg-field');
+  var survivors = data.survivors  || [];
+  var eliminated= data.eliminated || [];
+  var shame     = data.shamePlayers || [];
+  var total     = data.totalPlayers || 0;
+  var groups    = data.survivorGroups || {};
+
+  var groupKeys = Object.keys(groups).map(Number)
+    .sort(function(a,b){ return b - a; });
+
+  var breakdownHtml = '';
+  if (survivors.length === 0) {
+    breakdownHtml =
+      '<div style="color:#f85149;font-size:14px;' +
+      'font-weight:600">💀 No survivors — ' +
+      'nobody went 6/6 this week!</div>';
+  } else {
+    breakdownHtml = '<div class="field-breakdown">';
+    groupKeys.forEach(function(k) {
+      var grp   = groups[k];
+      var names = grp.map(function(s) {
+        return s.isMe
+          ? '<strong>' + s.name + ' (you)</strong>'
+          : s.name;
+      }).join(', ');
+      breakdownHtml +=
+        '<div>🟢 <strong>' + grp.length +
+        '</strong> survivor' + (grp.length!==1?'s':'') +
+        ' with <strong>' + k + '</strong> game' +
+        (k!==1?'s':'') + ' to go — ' + names + '</div>';
+    });
+    breakdownHtml += '</div>';
+  }
+
+  var allPills = '';
+  survivors.forEach(function(s) {
+    allPills += '<span class="survivor-pill alive' +
+      (s.isMe ? ' me' : '') + '">✅ ' + s.name + '</span>';
+  });
+  eliminated.forEach(function(name) {
+    allPills += '<span class="survivor-pill dead">' +
+      '💀 ' + name + '</span>';
+  });
+  shame.forEach(function(name) {
+    allPills += '<span class="survivor-pill shame">' +
+      '😬 ' + name + '</span>';
+  });
+
+  var shameHtml = '';
+  if (shame.length > 0) {
+    shameHtml =
+      '<div style="margin-top:14px;padding-top:14px;' +
+      'border-top:1px solid #21262d">' +
+      '<div style="font-size:12px;font-weight:700;' +
+      'color:#d29922;text-transform:uppercase;' +
+      'letter-spacing:.5px;margin-bottom:6px">' +
+      '😬 Hall of Shame — Did Not Submit 6 Picks</div>' +
+      '<div style="font-size:13px;color:#d29922">' +
+      shame.join(', ') + '</div></div>';
+  }
+
+  el.innerHTML =
+    '<div style="font-size:13px;color:#8b949e;' +
+    'margin-bottom:12px">' +
+    '<strong style="color:#e6edf3">' +
+    survivors.length + '</strong> of ' +
+    '<strong style="color:#e6edf3">' + total +
+    '</strong> players still alive</div>' +
+    breakdownHtml +
+    '<div class="survivor-grid" style="margin-top:14px">' +
+    allPills + '</div>' + shameHtml;
+}
+
+function setGameView(view) {
+  rgView = view;
+  document.getElementById('vbtn-chaos')
+    .classList.toggle('active', view === 'chaos');
+  document.getElementById('vbtn-rooting')
+    .classList.toggle('active', view === 'rooting');
+  if (rgData) { renderGamesView(rgData); }
+}
+
+function renderGamesView(data) {
+  var games = rgView === 'chaos'
+    ? data.gamesByChoas : data.gamesByRooting;
+  var el = document.getElementById('rg-games');
+  el.innerHTML = '';
+  if (!games || games.length === 0) {
+    el.innerHTML =
+      '<p style="color:#8b949e;font-size:14px">' +
+      'No games yet.</p>';
+    return;
+  }
+
+  games.forEach(function(g) {
+    var counts  = g.pickCounts ||
+      { away:0, home:0, draw:0, total:0 };
+    var total   = counts.total || 1;
+    var awayPct = Math.round((counts.away/total)*100);
+    var homePct = Math.round((counts.home/total)*100);
+    var drawPct = Math.round((counts.draw/total)*100);
+    var fire    = g.chaosScore >= 60 ? '🔥🔥🔥' :
+                  g.chaosScore >= 30 ? '🔥🔥' : '🔥';
+
+    var resultHtml = '';
+    if (g.status === 'final' && g.result) {
+      resultHtml =
+        '<span class="chaos-result covered">' +
+        '✓ ' + g.result + ' covered</span>';
+    } else if (g.status === 'in_progress') {
+      resultHtml =
+        '<span class="chaos-result live">' +
+        '⚡ LIVE: ' + g.awayScore + '-' +
+        g.homeScore + '</span>';
+    } else {
+      resultHtml =
+        '<span class="chaos-result pending">' +
+        'Pending</span>';
+    }
+
+    var rootingHtml = '';
+    if (rgView === 'rooting' && g.rootingInterest) {
+      var ri = g.rootingInterest;
+      if (ri === 'chaos') {
+        var myT = g.myPick &&
+          g.myPick.indexOf('Draw:') === 0
+          ? 'Draw' : g.myPick;
+        rootingHtml =
+          '<div class="rooting-interest">' +
+          '<span class="rooting-chaos">' +
+          '🔴 ROOT AGAINST — most picked against you. ' +
+          'If ' + myT + ' covers you gain ground!</span></div>';
+      } else if (ri === 'for') {
+        var myT2 = g.myPick &&
+          g.myPick.indexOf('Draw:') === 0
+          ? 'Draw' : g.myPick;
+        rootingHtml =
+          '<div class="rooting-interest">' +
+          '<span class="rooting-for">' +
+          '🟢 ROOT FOR ' + myT2 +
+          ' — you\'re with the majority</span></div>';
+      } else if (ri === 'neutral') {
+        rootingHtml =
+          '<div class="rooting-interest">' +
+          '<span class="rooting-neutral">' +
+          '⚪ Neutral — everyone picked the same way' +
+          '</span></div>';
+      } else if (ri === 'none') {
+        rootingHtml =
+          '<div class="rooting-interest">' +
+          '<span class="rooting-none">' +
+          '— You didn\'t pick this game</span></div>';
+      }
+    }
+
+    var distLabels = g.gameType === 'moneyline'
+      ? ('<span>' + g.awayTeam + ' ' + awayPct + '%</span>' +
+         '<span>Draw ' + drawPct + '%</span>' +
+         '<span>' + g.homeTeam + ' ' + homePct + '%</span>')
+      : ('<span>' + g.awayTeam + ' ' + awayPct + '%</span>' +
+         '<span>' + g.homeTeam + ' ' + homePct + '%</span>');
+
+    var lc  = 'league-' + g.league.toLowerCase();
+    var div = document.createElement('div');
+    div.className = 'chaos-game';
+    div.innerHTML =
+      '<div class="chaos-header">' +
+      '<div class="chaos-teams">' +
+      '<span class="league-badge ' + lc + '">' +
+      g.league + '</span> ' +
+      g.awayTeam + ' @ ' + g.homeTeam + '</div>' +
+      '<div class="chaos-fire">' + fire + '</div></div>' +
+      '<div class="chaos-bar">' +
+      '<div class="chaos-bar-away" style="width:' +
+      awayPct + '%"></div>' +
+      '<div class="chaos-bar-draw" style="width:' +
+      drawPct + '%"></div>' +
+      '<div class="chaos-bar-home" style="width:' +
+      homePct + '%"></div></div>' +
+      '<div class="chaos-labels">' + distLabels + '</div>' +
+      rootingHtml +
+      '<div style="margin-top:6px">' + resultHtml + '</div>';
+    el.appendChild(div);
+  });
+}
+
+function startRgRefresh() {
+  stopRgRefresh();
+  rgCountdown = 60;
+  updateRefreshInfo();
+  rgRefreshTimer = setInterval(function() {
+    rgCountdown--;
+    if (rgCountdown <= 0) {
+      rgCountdown = 60;
+      loadRoutingGuide(true);
+    }
+    updateRefreshInfo();
+  }, 1000);
+}
+
+function stopRgRefresh() {
+  if (rgRefreshTimer) {
+    clearInterval(rgRefreshTimer);
+    rgRefreshTimer = null;
+  }
+}
+
+function updateRefreshInfo() {
+  var el = document.getElementById('rg-refresh-info');
+  if (el) { el.textContent = 'Refreshes in ' + rgCountdown + 's'; }
+}
+
+function showAlert(elId, msg, type) {
+  var el = document.getElementById(elId);
+  el.textContent = msg;
+  el.className   = 'alert alert-' + type;
+  el.classList.remove('hidden');
+  if (type === 'success') {
+    setTimeout(function() {
+      el.classList.add('hidden');
+    }, 4000);
+  }
+}
+</script>
+</body>
+</html>
