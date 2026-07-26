@@ -585,39 +585,35 @@ function updateDeadlineBanner() {
     banner.textContent = '🔒 Picks are locked for this week.';
     banner.classList.remove('hidden');
     stopDeadlineTimer();
+    // Update all per-game countdowns to locked
+    document.querySelectorAll('.game-countdown')
+      .forEach(function(el) {
+        el.textContent = '🔒 Locked';
+        el.className = 'game-countdown warn';
+      });
     return;
   }
 
-  var days  = Math.floor(diff / 86400000);
-  var hours = Math.floor((diff % 86400000) / 3600000);
-  var mins  = Math.floor((diff % 3600000)  / 60000);
-  var secs  = Math.floor((diff % 60000)    / 1000);
-
-  var text  = '';
-  var cls   = '';
+  var days = Math.floor(diff / 86400000);
+  var hours= Math.floor((diff % 86400000) / 3600000);
+  var mins = Math.floor((diff % 3600000)  / 60000);
+  var secs = Math.floor((diff % 60000)    / 1000);
+  var text = '', cls = '';
 
   if (diff > 2 * 3600000) {
-    // More than 2 hours — calm
-    if (days > 0) {
-      text = '⏰ Picks lock in ' + days + 'd ' +
-             hours + 'h ' + mins + 'm';
-    } else {
-      text = '⏰ Picks lock in ' + hours + 'h ' +
-             mins + 'm ' + secs + 's';
-    }
+    text = days > 0
+      ? '⏰ Picks lock in ' + days + 'd ' + hours + 'h ' + mins + 'm'
+      : '⏰ Picks lock in ' + hours + 'h ' + mins + 'm ' + secs + 's';
     cls = 'deadline-calm';
   } else if (diff > 1800000) {
-    // Under 2 hours — warn
-    text = '⚠️ Picks lock in ' + hours + 'h ' +
-           mins + 'm ' + secs + 's — don\'t forget!';
+    text = '⚠️ Picks lock in ' + hours + 'h ' + mins + 'm ' +
+           secs + 's — don\'t forget!';
     cls = 'deadline-warn';
   } else if (diff > 300000) {
-    // Under 30 minutes — urgent
     text = '🚨 PICKS LOCK IN ' + mins + ':' +
            pad2(secs) + ' — submit now!';
     cls = 'deadline-urgent';
   } else {
-    // Under 5 minutes — critical
     text = '🔥 ' + mins + ':' + pad2(secs) +
            ' — LAST CHANCE TO SUBMIT PICKS!';
     cls = 'deadline-critical';
@@ -626,8 +622,31 @@ function updateDeadlineBanner() {
   banner.className = 'deadline-banner ' + cls;
   banner.textContent = text;
   banner.classList.remove('hidden');
-}
 
+  // Update per-game countdowns for early-week games
+  // Each countdown element has data-kickoff attribute
+  document.querySelectorAll('.game-countdown[data-kickoff]')
+    .forEach(function(el) {
+      var kickoff = parseInt(el.dataset.kickoff);
+      var gameDiff = kickoff - now;
+      if (gameDiff <= 0) {
+        el.textContent = '🔒 Locked at kickoff';
+        el.className = 'game-countdown warn';
+        return;
+      }
+      var gh = Math.floor(gameDiff / 3600000);
+      var gm = Math.floor((gameDiff % 3600000) / 60000);
+      var gs = Math.floor((gameDiff % 60000) / 1000);
+      var urgent = gameDiff < 7200000;
+      el.className = 'game-countdown ' + (urgent ? 'urgent' : 'warn');
+      if (gh > 0) {
+        el.textContent = '⏱ Locks at kickoff — ' + gh + 'h ' + gm + 'm';
+      } else {
+        el.textContent = '⏱ Locks at kickoff — ' + gm + 'm ' + gs + 's';
+      }
+    });
+}
+  
 function pad2(n) {
   return n < 10 ? '0' + n : '' + n;
 }
@@ -742,9 +761,10 @@ function renderGames(data) {
           var dh=Math.floor(diffMs/3600000);
           var dm=Math.floor((diffMs%3600000)/60000);
           var cdCls=diffMs<7200000?'urgent':'warn';
-          meta.innerHTML+=
-            '<div class="game-countdown '+cdCls+'">'+
-            '⏱ Locks at kickoff — '+dh+'h '+dm+'m</div>';
+          meta.innerHTML +=
+            '<div class="game-countdown ' + cdCls + '" ' +
+            'data-kickoff="' + g.kickoff + '">' +
+            '⏱ Locks at kickoff — ' + dh + 'h ' + dm + 'm</div>';
         } else {
           meta.innerHTML+=
             '<div class="game-info countdown">Locks: '+
@@ -1311,8 +1331,17 @@ function renderPicksGrid(data,el){
     '<th class="player-col">Player</th>';
 
   data.gridGames.forEach(function(g){
-    var abbrev=g.awayTeam.split(' ').pop()+
-      ' @ '+g.homeTeam.split(' ').pop();
+     function abbreviateTeam(name) {
+    var parts = name.split(' ');
+    if (parts.length === 1) { return name; }
+    // Use first letter of first word + last word
+    // e.g. "Boston Red Sox" → "B. Sox"
+    //      "Chicago White Sox" → "C. Sox"
+    return parts[0].charAt(0) + '. ' + parts[parts.length - 1];
+  }
+  var abbrev = abbreviateTeam(g.awayTeam) +
+    ' @ ' + abbreviateTeam(g.homeTeam);
+    
     var statusIcon=g.status==='final'?'✓':
                    g.status==='in_progress'?'⚡':'○';
     html+='<th>'+statusIcon+' '+abbrev+'</th>';
