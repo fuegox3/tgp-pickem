@@ -909,12 +909,15 @@ function updatePicksSummary(){
   }
 }
 
-function refreshButtonStates(){
-  document.querySelectorAll('.pick-btn:not(:disabled)')
-    .forEach(function(btn){
-      var key=btn.dataset.key||btn.textContent;
-      var isSel=selectedPicks.indexOf(key)!==-1;
-      btn.disabled=!isSel&&selectedPicks.length>=6;
+function refreshButtonStates() {
+  var atLimit = selectedPicks.length >= 6;
+  document.querySelectorAll('.pick-btn')
+    .forEach(function(btn) {
+      var key   = btn.dataset.key || btn.textContent;
+      var isSel = selectedPicks.indexOf(key) !== -1;
+      // If at limit: disable unselected buttons
+      // If under limit: enable ALL buttons (selected or not)
+      btn.disabled = atLimit && !isSel;
     });
 }
 
