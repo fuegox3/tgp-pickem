@@ -79,6 +79,12 @@ body{font-family:system-ui,sans-serif;background:#0d1117;
 .pick-chip{background:#0f2d1f;border:1px solid #238636;
            color:#3fb950;padding:4px 10px;border-radius:20px;
            font-size:13px}
+.pick-chip-wrong{background:#2d0f0f;border:1px solid #da3633;
+                 color:#f85149;padding:4px 10px;border-radius:20px;
+                 font-size:13px}
+.pick-chip-pending{background:#21262d;border:1px solid #30363d;
+                   color:#8b949e;padding:4px 10px;border-radius:20px;
+                   font-size:13px}
 .lb-row{display:flex;align-items:center;padding:10px 0;
         border-bottom:1px solid #21262d;gap:10px}
 .lb-row:last-child{border-bottom:none}
@@ -262,12 +268,13 @@ body{font-family:system-ui,sans-serif;background:#0d1117;
 <body>
 <div class="container">
   <div class="header">
-    <div class="header-row">
-      <span></span>
-      <h1>🏈 TGP Pick'em Pool</h1>
-      <button class="logout-btn hidden" id="logout-btn"
-              onclick="logout()">Sign out</button>
-    </div>
+<div class="header-row">
+  <span style="min-width:60px"></span>
+  <h1>🏈 TGP Pick'em Pool</h1>
+  <button class="logout-btn hidden" id="logout-btn"
+          onclick="logout()" style="min-width:60px;text-align:right">
+    Sign out</button>
+</div>
     <p id="header-sub">Beat the spread. Win the week.</p>
   </div>
 
@@ -975,8 +982,12 @@ function renderLbList(elId,rows,showAllSix){
            r.rank===3?'bronze':'';
     var badge=(showAllSix&&r.allSix)
       ?'<span class="lb-badge">WINNER</span>':'';
-    var score=showAllSix?r.correct+'/6':
-      r.correct+' correct · '+r.pct;
+var pctDisplay = r.pct
+  ? (parseFloat(r.pct) * 100).toFixed(1) + '%'
+  : '0.0%';
+var score = showAllSix
+  ? r.correct + '/6'
+  : r.correct + ' correct · ' + pctDisplay;
     return '<div class="lb-row">'+
       '<span class="lb-rank '+rc+'">'+r.rank+'</span>'+
       '<span class="lb-name">'+r.name+badge+'</span>'+
@@ -985,22 +996,28 @@ function renderLbList(elId,rows,showAllSix){
   }).join('');
 }
 
-function renderAllPicks(allPicks){
-  var grid=document.getElementById('lb-picks-grid');
-  allPicks.sort(function(a,b){
-    return (b.correct||0)-(a.correct||0);
+function renderAllPicks(allPicks) {
+  var grid = document.getElementById('lb-picks-grid');
+  allPicks.sort(function(a, b) {
+    return (b.correct || 0) - (a.correct || 0);
   });
-  grid.innerHTML=allPicks.map(function(p){
-    var chips=p.picks.map(function(pk){
-      var label=pk.indexOf('Draw:')===0
-        ?'Draw ('+pk.split(':')[1]+')':pk;
-      return '<span class="pick-chip">'+label+'</span>';
+  grid.innerHTML = allPicks.map(function(p) {
+    var chips = p.picks.map(function(pk) {
+      var label = pk.pick.indexOf('Draw:') === 0
+        ? 'Draw (' + pk.pick.split(':')[1] + ')' : pk.pick;
+      var chipStyle = pk.status === 'correct'
+        ? 'pick-chip'         // green — existing style
+        : pk.status === 'wrong'
+        ? 'pick-chip pick-chip-wrong'  // red — new style
+        : 'pick-chip pick-chip-pending'; // grey — new style
+      return '<span class="' + chipStyle + '">' +
+             label + '</span>';
     }).join('');
-    return '<div class="lb-row" style="flex-wrap:wrap;gap:6px">'+
-      '<span class="lb-name" style="width:100%">'+p.name+
-      ' <span style="color:#8b949e;font-size:13px">('+
-      (p.correct||0)+'/6 correct)</span></span>'+
-      chips+'</div>';
+    return '<div class="lb-row" style="flex-wrap:wrap;gap:6px">' +
+      '<span class="lb-name" style="width:100%">' + p.name +
+      ' <span style="color:#8b949e;font-size:13px">(' +
+      (p.correct || 0) + '/6 correct)</span></span>' +
+      chips + '</div>';
   }).join('');
 }
 
