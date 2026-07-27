@@ -215,25 +215,85 @@ body{font-family:system-ui,sans-serif;background:#0d1117;
 .refresh-info{font-size:12px;color:#484f58}
 
 /* ── Picks Grid ─────────────────────────────────────────────── */
-.grid-wrap{overflow-x:auto}
-.picks-grid{border-collapse:collapse;min-width:100%;
-            font-size:12px}
-.picks-grid th{background:#21262d;padding:6px 10px;
-               text-align:center;font-weight:600;
-               border:1px solid #30363d;white-space:nowrap;
-               color:#8b949e;font-size:11px}
-.picks-grid th.player-col{text-align:left;min-width:100px}
-.picks-grid td{padding:6px 10px;border:1px solid #21262d;
-               text-align:center;white-space:nowrap}
-.picks-grid td.player-name{text-align:left;font-weight:500;
-                           color:#c9d1d9}
+.grid-wrap{
+  overflow-x:auto;
+  max-height:500px;
+  overflow-y:auto;
+  border:1px solid #30363d;
+  border-radius:8px;
+}
+.picks-grid{
+  border-collapse:collapse;
+  min-width:100%;
+  font-size:12px;
+}
+.picks-grid th{
+  background:#21262d;
+  padding:6px 10px;
+  text-align:center;
+  font-weight:600;
+  border:1px solid #30363d;
+  white-space:nowrap;
+  color:#8b949e;
+  font-size:11px;
+  z-index:2;
+}
+.picks-grid th.player-col{
+  text-align:left;
+  min-width:110px;
+  z-index:3;
+}
+.picks-grid td{
+  padding:6px 10px;
+  border:1px solid #21262d;
+  text-align:center;
+  white-space:nowrap;
+}
+.picks-grid td.player-name{
+  text-align:left;
+  font-weight:500;
+  color:#c9d1d9;
+  background:#161b22;
+}
+.grid-row-alt td{background:#1a1f26}
+.grid-row-alt td.player-name{background:#1a1f26}
+.grid-row-alt td.sticky-col{background:#1a1f26}
+.sticky-col{
+  position:sticky;
+  left:0;
+  z-index:2;
+  background:#161b22;
+}
+.sticky-header{
+  position:sticky;
+  top:0;
+  z-index:2;
+  background:#21262d;
+}
+.picks-grid th.sticky-col.sticky-header{
+  z-index:4;
+  background:#21262d;
+}
+.grid-score{
+  font-weight:600;
+  color:#8b949e;
+  background:#161b22;
+}
+.grid-row-alt .grid-score{background:#1a1f26}
 .cell-correct{background:#0f2d1f;color:#3fb950;font-weight:600}
 .cell-wrong{background:#2d0f0f;color:#f85149;font-weight:600}
 .cell-live{background:#2d1b00;color:#d29922;font-weight:600}
 .cell-pending{background:#161b22;color:#8b949e}
 .cell-none{background:#0d1117;color:#484f58}
-.grid-legend{display:flex;gap:12px;margin-top:8px;
-             flex-wrap:wrap;font-size:11px}
+.grid-row-alt .cell-pending{background:#1a1f26}
+.grid-row-alt .cell-none{background:#111620}
+.grid-legend{
+  display:flex;
+  gap:12px;
+  margin-top:8px;
+  flex-wrap:wrap;
+  font-size:11px;
+}
 .legend-item{display:flex;align-items:center;gap:4px}
 .legend-dot{width:10px;height:10px;border-radius:2px}
 
@@ -1340,70 +1400,87 @@ function renderGamesView(data){
 }
 
 // ── PICKS GRID ────────────────────────────────────────────────
-function renderPicksGrid(data,el){
-  if(!data.gridGames||data.gridGames.length===0){
-    el.innerHTML='<p style="color:#8b949e;font-size:14px">'+
-      'No games to display yet.</p>'; return;
+function renderPicksGrid(data, el) {
+  if (!data.gridGames || data.gridGames.length === 0) {
+    el.innerHTML =
+      '<p style="color:#8b949e;font-size:14px">' +
+      'No games to display yet.</p>';
+    return;
   }
 
-  var html='<div class="grid-wrap">'+
-    '<table class="picks-grid"><thead><tr>'+
-    '<th class="player-col">Player</th>';
+  // Abbreviate team name to last word for compact cells
+  function abbrevCell(name) {
+    var parts = name.split(' ');
+    return parts[parts.length - 1];
+  }
 
-  data.gridGames.forEach(function(g){
-     function abbreviateTeam(name) {
+  // Column headers — abbreviated matchup
+  function abbreviateTeam(name) {
     var parts = name.split(' ');
     if (parts.length === 1) { return name; }
-    // Use first letter of first word + last word
-    // e.g. "Boston Red Sox" → "B. Sox"
-    //      "Chicago White Sox" → "C. Sox"
     return parts[0].charAt(0) + '. ' + parts[parts.length - 1];
   }
-  var abbrev = abbreviateTeam(g.awayTeam) +
-    ' @ ' + abbreviateTeam(g.homeTeam);
-    
-    var statusIcon=g.status==='final'?'✓':
-                   g.status==='in_progress'?'⚡':'○';
-    html+='<th>'+statusIcon+' '+abbrev+'</th>';
-  });
-  html+='<th>Score</th></tr></thead><tbody>';
 
-  data.gridPlayers.forEach(function(pl){
-    html+='<tr><td class="player-name">'+pl.name+'</td>';
-    pl.cells.forEach(function(cell){
-      var cls='cell-'+cell.result;
-      html+='<td class="'+cls+'">'+cell.pick+'</td>';
+  var html = '<div class="grid-wrap">' +
+    '<table class="picks-grid"><thead><tr>' +
+    '<th class="player-col sticky-col sticky-header">' +
+    'Player</th>';
+
+  data.gridGames.forEach(function(g) {
+    var abbrev = abbreviateTeam(g.awayTeam) +
+      ' @ ' + abbreviateTeam(g.homeTeam);
+    var statusIcon = g.status === 'final'    ? '✓ ' :
+                     g.status === 'in_progress' ? '⚡ ' : '';
+    html += '<th class="sticky-header">' +
+      statusIcon + abbrev + '</th>';
+  });
+  html += '<th class="sticky-header">Score</th>' +
+    '</tr></thead><tbody>';
+
+  data.gridPlayers.forEach(function(pl, rowIdx) {
+    var rowBg = rowIdx % 2 === 0 ? '' : ' grid-row-alt';
+    html += '<tr class="' + rowBg + '">' +
+      '<td class="player-name sticky-col">' +
+      pl.name + '</td>';
+
+    pl.cells.forEach(function(cell) {
+      var cls = 'cell-' + cell.result;
+      // Abbreviate team name in cell for compactness
+      var label = cell.pick === '—'
+        ? '—' : abbrevCell(cell.pick);
+      html += '<td class="' + cls + '">' +
+        label + '</td>';
     });
-    // Count corrects for this player
-    var correct=pl.cells.filter(function(c){
-      return c.result==='correct';
+
+    var correct = pl.cells.filter(function(c) {
+      return c.result === 'correct';
     }).length;
-    var total=pl.cells.filter(function(c){
-      return c.result!=='none';
+    var total = pl.cells.filter(function(c) {
+      return c.result !== 'none';
     }).length;
-    html+='<td style="font-weight:600;color:#8b949e">'+
-      correct+'/'+total+'</td></tr>';
+    html += '<td class="grid-score sticky-right">' +
+      correct + '/' + total + '</td></tr>';
   });
 
-  html+='</tbody></table></div>'+
-    '<div class="grid-legend">'+
-    '<div class="legend-item">'+
-    '<div class="legend-dot" style="background:#0f2d1f;'+
-    'border:1px solid #238636"></div>Correct</div>'+
-    '<div class="legend-item">'+
-    '<div class="legend-dot" style="background:#2d0f0f;'+
-    'border:1px solid #da3633"></div>Wrong</div>'+
-    '<div class="legend-item">'+
-    '<div class="legend-dot" style="background:#2d1b00;'+
-    'border:1px solid #d29922"></div>Live</div>'+
-    '<div class="legend-item">'+
-    '<div class="legend-dot" style="background:#161b22;'+
-    'border:1px solid #30363d"></div>Pending</div>'+
-    '<div class="legend-item">'+
-    '<div class="legend-dot" style="background:#0d1117">'+
+  html += '</tbody></table></div>' +
+    '<div class="grid-legend">' +
+    '<div class="legend-item">' +
+    '<div class="legend-dot" style="background:#0f2d1f;' +
+    'border:1px solid #238636"></div>Correct</div>' +
+    '<div class="legend-item">' +
+    '<div class="legend-dot" style="background:#2d0f0f;' +
+    'border:1px solid #da3633"></div>Wrong</div>' +
+    '<div class="legend-item">' +
+    '<div class="legend-dot" style="background:#2d1b00;' +
+    'border:1px solid #d29922"></div>Live</div>' +
+    '<div class="legend-item">' +
+    '<div class="legend-dot" style="background:#161b22;' +
+    'border:1px solid #30363d"></div>Pending</div>' +
+    '<div class="legend-item">' +
+    '<div class="legend-dot" style="background:#0d1117">' +
     '</div>No Pick</div></div>';
 
-  el.innerHTML=html;
+  el.innerHTML = html;
 }
 
 // ── AUTO REFRESH ──────────────────────────────────────────────
