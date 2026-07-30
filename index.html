@@ -37,6 +37,21 @@ body{font-family:system-ui,sans-serif;background:#0d1117;
          padding:8px 14px;font-size:13px;cursor:pointer;
          border-bottom:2px solid transparent;white-space:nowrap}
 .btn-tab.active{color:#58a6ff;border-bottom-color:#58a6ff}
+  .btn-export{
+  padding:8px 18px;
+  border-radius:8px;
+  border:1px solid #30363d;
+  background:#21262d;
+  color:#8b949e;
+  font-size:13px;
+  font-weight:500;
+  cursor:pointer;
+  transition:all .15s;
+}
+.btn-export:hover{
+  border-color:#388bfd;
+  color:#58a6ff;
+}
 .tabs{display:flex;border-bottom:1px solid #30363d;
       margin-bottom:20px;overflow-x:auto}
 .game-row{padding:12px 0;border-bottom:1px solid #21262d;
@@ -398,6 +413,16 @@ body{font-family:system-ui,sans-serif;background:#0d1117;
             All others lock Saturday noon ET.
           </p>
         </div>
+        <div id="export-area" class="hidden" style="margin-top:12px;text-align:center">
+  <button class="btn-export" onclick="exportPicksSheet()"
+          id="export-btn">
+    ⬇ Download Week's Games (Excel)
+  </button>
+  <p style="font-size:12px;color:#8b949e;margin-top:6px">
+    Exports all games with spreads and your current picks
+    for offline research.
+  </p>
+</div>
       </div>
     </div>
 
@@ -550,6 +575,8 @@ function showApp() {
           .classList.remove('hidden');
   document.getElementById('picks-content')
           .classList.add('hidden');
+  document.getElementById('export-area')
+        .classList.remove('hidden');
   loadPicksTab();
 }
 
@@ -974,6 +1001,183 @@ function updatePicksSummary(){
       ?'Save All 6 Picks'
       :'Save '+count+' Pick'+(count!==1?'s':'');
   }
+}
+
+  function exportPicksSheet() {
+  var btn = document.getElementById('export-btn');
+  btn.disabled    = true;
+  btn.textContent = 'Building file...';
+
+  api({ action: 'getWeekData',
+        playerId: player.playerId },
+    function(res) {
+      btn.disabled    = false;
+      btn.textContent = '⬇ Download Week\'s Games (Excel)';
+
+      if (!res.success) {
+        alert('Could not load games: ' + res.error);
+        return;
+      }
+
+      try {
+        buildAndDownloadExcel(res);
+      } catch(e) {
+        alert('Export failed: ' + e.message);
+      }
+    }
+  );
+}
+
+function buildAndDownloadExcel(data) {
+  var wb = XLSX.utils.book_new();
+
+  // ── Sheet 1: All games grouped by league ─────────────────
+  var leagues = ['NFL','NCAAF','MLB','NBA','NHL','MLS'];
+  var grouped = {};
+  leagues.forEach(function(l) { grouped[l] = []; });
+  data.games.forEach(function(g) {
+    if (!grouped[g.league]) { grouped[g.league] = []; }
+    grouped[g.league].push(g);
+  });
+
+  var rows = [];
+
+  // Title row
+  rows.push(['TGP Pick\'em Pool — Week ' + data.week +
+             ' Games']);
+  rows.push(['Generated: ' +
+             new Date().toLocaleString('en-US')]);
+  rows.push(['Picks lock: Saturday noon ET']);
+  rows.push([]); // blank row
+
+  // Column headers
+  rows.push([
+    'League', 'Away Team', 'Home Team',
+    'Spread / Line', 'Favored Team',
+    'Kickoff (ET)', 'Your Pick', 'Status',
+  ]);
+
+  leagues.forEach(function(league) {
+    var lg = grouped[league];
+    if (!lg || lg.length === 0) { return; }
+
+    lg.forEach(function(g) {
+      var now      = Date.now();
+      var deadline = g.deadline;
+      var locked   = now >= deadline ||
+                     g.status === 'final';
+
+      // Format kickoff
+      var kickStr = new Date(g.kickoff).toLocaleString(
+        'en-US', {
+          weekday: 'short', month: 'short', day: 'numeric',
+          hour: 'numeric', minute: '2-digit',
+        });
+
+      // Format spread
+      var spreadStr = '';
+      if (g.gameType === 'moneyline') {
+        spreadStr = 'ML: ' +
+          (g.oddsAway || 'N/A') + ' / ' +
+          (g.oddsDraw || '') + ' / ' +
+          (g.oddsHome || 'N/A');
+      } else {
+        spreadStr = g.spread === 'TBD'
+          ? 'TBD'
+          : (g.favoredTeam + ' ' + g.spread);
+      }
+
+      // Check if player picked this game
+      var myPick = '';
+      var drawKey = 'Draw:' + g.awayTeam;
+      if (data.myPicks.indexOf(g.awayTeam) !== -1) {
+        myPick = '✓ ' + g.awayTeam;
+      } else if (data.myPicks.indexOf(g.homeTeam) !== -1) {
+        myPick = '✓ ' + g.homeTeam;
+      } else if (data.myPicks.indexOf(drawKey) !== -1) {
+        myPick = '✓ Draw';
+      }
+
+      var statusStr = locked   ? 'Locked'    :
+                      g.status === 'in_progress'
+                               ? 'Live'      : 'Open';
+
+      rows.push([
+        league,
+        g.awayTeam,
+        g.homeTeam,
+        spreadStr,
+        g.gameType === 'moneyline' ? '—' : (g.favoredTeam || '—'),
+        kickStr,
+        myPick,
+        statusStr,
+      ]);
+    });
+
+    rows.push([]); // blank row between leagues
+  });
+
+  // ── Sheet 2: My current picks summary ────────────────────
+  var picksRows = [];
+  picksRows.push(['My Picks — Week ' + data.week]);
+  picksRows.push([]);
+  picksRows.push(['#', 'My Pick', 'Game']);
+
+  if (data.myPicks.length === 0) {
+    picksRows.push(['—', 'No picks submitted yet', '']);
+  } else {
+    data.myPicks.forEach(function(pick, idx) {
+      // Find the game this pick belongs to
+      var gameLabel = '';
+      var drawKey2  = '';
+      data.games.forEach(function(g) {
+        drawKey2 = 'Draw:' + g.awayTeam;
+        if (pick === g.awayTeam ||
+            pick === g.homeTeam ||
+            pick === drawKey2) {
+          gameLabel = g.awayTeam + ' @ ' + g.homeTeam;
+        }
+      });
+      var pickLabel = pick.indexOf('Draw:') === 0
+        ? 'Draw' : pick;
+      picksRows.push([idx + 1, pickLabel, gameLabel]);
+    });
+  }
+
+  picksRows.push([]);
+  picksRows.push([data.myPicks.length + ' of 6 picks made']);
+  picksRows.push(['Deadline: Saturday noon ET']);
+
+  // ── Build workbook ────────────────────────────────────────
+  var wsGames = XLSX.utils.aoa_to_sheet(rows);
+  var wsPicks = XLSX.utils.aoa_to_sheet(picksRows);
+
+  // Column widths for games sheet
+  wsGames['!cols'] = [
+    { wch: 8  },  // League
+    { wch: 24 },  // Away
+    { wch: 24 },  // Home
+    { wch: 22 },  // Spread
+    { wch: 22 },  // Favored
+    { wch: 22 },  // Kickoff
+    { wch: 20 },  // My pick
+    { wch: 10 },  // Status
+  ];
+
+  // Column widths for picks sheet
+  wsPicks['!cols'] = [
+    { wch: 4  },
+    { wch: 24 },
+    { wch: 36 },
+  ];
+
+  XLSX.utils.book_append_sheet(wb, wsGames, 'Week ' + data.week + ' Games');
+  XLSX.utils.book_append_sheet(wb, wsPicks, 'My Picks');
+
+  // Download
+  var filename = 'TGP_Week' + data.week + '_' +
+    player.name.replace(/\s+/g, '_') + '.xlsx';
+  XLSX.writeFile(wb, filename);
 }
 
 function refreshButtonStates() {
