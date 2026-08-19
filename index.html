@@ -520,18 +520,29 @@ var deadlineTimer  = null;
 
 // Warm up on page load
 function warmup() {
-  // Random delay staggers the thundering herd
+  // Random 0-3 second delay staggers concurrent page loads
   var delay = Math.floor(Math.random() * 3000);
   setTimeout(function() {
     fetch(API_URL, {
       method:  'POST',
       headers: { 'Content-Type': 'text/plain' },
       body:    JSON.stringify({ action: 'warmup' }),
-    }).catch(function() {
-      // Warmup failures are always silent
-    });
+    }).catch(function() {});
   }, delay);
 }
+
+// Keepalive: fires every 4 minutes while user is on page.
+// Keeps the Apps Script V8 instance from going cold between
+// the initial page load and when picks are actually submitted.
+// A user who opens the page at 11am and waits until 11:50
+// to submit will still hit a warm runtime.
+setInterval(function() {
+  fetch(API_URL, {
+    method:  'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body:    JSON.stringify({ action: 'warmup' }),
+  }).catch(function() {});
+}, 240000); // every 4 minutes
 
 function showLogin() {
   document.getElementById('view-login')
@@ -574,39 +585,45 @@ function logout() {
 function api(payload, cb, _retryCount) {
   var retryCount  = _retryCount || 0;
   var maxRetries  = 3;
-  var retryDelays = [1500, 3000, 5000]; // 1.5s, 3s, 5s
+  var retryDelays = [1500, 3000, 5000];
+
+  // 15-second timeout — forces fast failure under load
+  var controller = new AbortController();
+  var timeoutId  = setTimeout(function() {
+    controller.abort();
+  }, 15000);
 
   fetch(API_URL, {
     method:  'POST',
     headers: { 'Content-Type': 'text/plain' },
     body:    JSON.stringify(payload),
+    signal:  controller.signal,
   })
   .then(function(r) {
-    // Read as text first so we can inspect before parsing
+    clearTimeout(timeoutId);
     return r.text();
   })
   .then(function(text) {
     // Detect HTML error pages from Apps Script
     if (text.trim().charAt(0) === '<') {
-      // Apps Script returned HTML — treat as retryable
       throw new Error('server_busy');
     }
     try {
       return JSON.parse(text);
     } catch(e) {
-      // Malformed JSON — also retryable
       throw new Error('server_busy');
     }
   })
   .then(function(data) {
-    // Success — pass to callback
     cb(data);
   })
   .catch(function(err) {
+    clearTimeout(timeoutId);
+
     var isRetryable =
-      err.message === 'server_busy'      ||
-      err.message === 'Failed to fetch'  ||
-      err.message.indexOf('network') !== -1 ||
+      err.name    === 'AbortError'        || // timeout
+      err.message === 'server_busy'       || // HTML response
+      err.message === 'Failed to fetch'   || // network
       err.message.indexOf('NetworkError') !== -1;
 
     if (isRetryable && retryCount < maxRetries) {
@@ -618,18 +635,16 @@ function api(payload, cb, _retryCount) {
         api(payload, cb, retryCount + 1);
       }, delay);
     } else {
-      // All retries exhausted — show friendly message
       cb({
         success: false,
         error: retryCount >= maxRetries
-          ? 'The server is busy right now. ' +
-            'Please wait a moment and try again.'
+          ? 'The server is busy. Please wait a moment ' +
+            'and try again.'
           : (err.message || 'Network error.'),
       });
     }
   });
 }
-
 function login() {
   var name = document.getElementById('input-name')
              .value.trim();
