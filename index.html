@@ -520,38 +520,18 @@ var deadlineTimer  = null;
 
 // Warm up on page load
 function warmup() {
-  fetch(API_URL, {
-    method:'POST',
-    headers:{'Content-Type':'text/plain'},
-    body: JSON.stringify({action:'warmup'}),
-  }).catch(function(){});
+  // Random delay staggers the thundering herd
+  var delay = Math.floor(Math.random() * 3000);
+  setTimeout(function() {
+    fetch(API_URL, {
+      method:  'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body:    JSON.stringify({ action: 'warmup' }),
+    }).catch(function() {
+      // Warmup failures are always silent
+    });
+  }, delay);
 }
-warmup();
-
-window.onload = function() {
-  var saved = sessionStorage.getItem('tgp_player');
-  if (saved) {
-    try {
-      player = JSON.parse(saved);
-      showApp();
-    } catch(e) {
-      sessionStorage.removeItem('tgp_player');
-      showLogin();
-    }
-  } else {
-    showLogin();
-  }
-  document.getElementById('input-pin')
-    .addEventListener('keydown',function(e){
-      if (e.key==='Enter'){login();}
-    });
-  document.getElementById('input-name')
-    .addEventListener('keydown',function(e){
-      if (e.key==='Enter'){
-        document.getElementById('input-pin').focus();
-      }
-    });
-};
 
 function showLogin() {
   document.getElementById('view-login')
@@ -591,17 +571,62 @@ function logout() {
   showLogin();
 }
 
-function api(payload, cb) {
+function api(payload, cb, _retryCount) {
+  var retryCount  = _retryCount || 0;
+  var maxRetries  = 3;
+  var retryDelays = [1500, 3000, 5000]; // 1.5s, 3s, 5s
+
   fetch(API_URL, {
-    method:'POST',
-    headers:{'Content-Type':'text/plain'},
-    body: JSON.stringify(payload),
+    method:  'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body:    JSON.stringify(payload),
   })
-  .then(function(r){ return r.json(); })
-  .then(function(d){ cb(d); })
-  .catch(function(err){
-    cb({success:false,
-        error:err.message||'Network error.'});
+  .then(function(r) {
+    // Read as text first so we can inspect before parsing
+    return r.text();
+  })
+  .then(function(text) {
+    // Detect HTML error pages from Apps Script
+    if (text.trim().charAt(0) === '<') {
+      // Apps Script returned HTML — treat as retryable
+      throw new Error('server_busy');
+    }
+    try {
+      return JSON.parse(text);
+    } catch(e) {
+      // Malformed JSON — also retryable
+      throw new Error('server_busy');
+    }
+  })
+  .then(function(data) {
+    // Success — pass to callback
+    cb(data);
+  })
+  .catch(function(err) {
+    var isRetryable =
+      err.message === 'server_busy'      ||
+      err.message === 'Failed to fetch'  ||
+      err.message.indexOf('network') !== -1 ||
+      err.message.indexOf('NetworkError') !== -1;
+
+    if (isRetryable && retryCount < maxRetries) {
+      var delay = retryDelays[retryCount] || 5000;
+      console.log('Request failed — retrying in ' +
+        (delay / 1000) + 's (' +
+        (retryCount + 1) + '/' + maxRetries + ')');
+      setTimeout(function() {
+        api(payload, cb, retryCount + 1);
+      }, delay);
+    } else {
+      // All retries exhausted — show friendly message
+      cb({
+        success: false,
+        error: retryCount >= maxRetries
+          ? 'The server is busy right now. ' +
+            'Please wait a moment and try again.'
+          : (err.message || 'Network error.'),
+      });
+    }
   });
 }
 
