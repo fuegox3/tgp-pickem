@@ -554,6 +554,19 @@ function showLogin() {
   stopDeadlineTimer();
 }
 
+function getSpreadLabel(team, g) {
+  if (!g.spread || g.spread === 'TBD' ||
+      g.gameType === 'moneyline') {
+    return team;
+  }
+  var spread = parseFloat(g.spread);
+  if (isNaN(spread)) { return team; }
+  if (team === g.favoredTeam) {
+    return team + ' (' + spread + ')';
+  }
+  return team + ' (+' + Math.abs(spread) + ')';
+}
+  
 function showApp() {
   document.getElementById('view-login')
           .classList.add('hidden');
@@ -953,7 +966,8 @@ function renderGames(data) {
           var btn=document.createElement('button');
           var isSel=selectedPicks.indexOf(team)!==-1;
           btn.className='pick-btn'+(isSel?' selected':'');
-          btn.textContent=team;
+          btn.dataset.key = team;  
+          btn.textContent = getSpreadLabel(team, g);
           btn.onclick=function(){
             togglePick(team,btn,g,data);
           };
@@ -985,12 +999,12 @@ function togglePick(team,btn,game,data){
     var oi=selectedPicks.indexOf(other);
     if(oi!==-1){
       selectedPicks.splice(oi,1);
-      document.querySelectorAll('.pick-btn')
-        .forEach(function(b){
-          if(b.textContent===other){
-            b.classList.remove('selected');
-          }
-        });
+    document.querySelectorAll('.pick-btn')
+      .forEach(function(b) {
+        if ((b.dataset.key || b.textContent) === other) {
+          b.classList.remove('selected');
+        }
+      });
     }
     selectedPicks.push(team);
     btn.classList.add('selected');
