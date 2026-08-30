@@ -113,6 +113,84 @@ body{font-family:system-ui,sans-serif;background:#0d1117;
 .lb-badge{font-size:11px;background:#2d2000;color:#d29922;
           border:1px solid #d29922;padding:2px 7px;
           border-radius:4px;margin-left:6px}
+/* ── Leaderboard subtabs ──────────────────────────────────── */
+.lb-subtabs{display:flex;gap:0;margin-bottom:20px;
+            border-bottom:1px solid #30363d}
+.lb-subtab-btn{background:transparent;color:#8b949e;border:none;
+               padding:8px 16px;font-size:13px;cursor:pointer;
+               border-bottom:2px solid transparent;white-space:nowrap}
+.lb-subtab-btn.active{color:#58a6ff;border-bottom-color:#58a6ff}
+
+/* ── Weekly grouped standings ─────────────────────────────── */
+.lb-group{margin-bottom:20px}
+.lb-group-header{display:flex;align-items:center;gap:10px;
+                 padding:8px 12px;border-radius:8px;
+                 margin-bottom:8px;font-size:13px;font-weight:700}
+.lb-group-winner .lb-group-header{
+  background:linear-gradient(135deg,#2d2000,#1a1400);
+  border:1px solid #d29922;color:#d29922;font-size:15px}
+.lb-group-alive .lb-group-header{
+  background:#0f2d1f;border:1px solid #238636;color:#3fb950}
+.lb-group-eliminated .lb-group-header{
+  background:#21262d;border:1px solid #30363d;color:#8b949e}
+.lb-group-nopicks .lb-group-header{
+  background:#2d1b00;border:1px solid #d29922;color:#d29922}
+.lb-player-row{display:flex;align-items:center;
+               padding:8px 12px;border-bottom:1px solid #21262d;
+               gap:10px}
+.lb-player-row:last-child{border-bottom:none}
+.lb-player-name{flex:1;font-size:14px;color:#c9d1d9}
+.lb-player-score{font-size:13px;font-weight:600}
+.pending-badge{font-size:11px;padding:2px 8px;border-radius:4px;
+              background:#2d1b00;color:#d29922;
+              border:1px solid #d29922;margin-left:6px}
+.elim-badge{font-size:11px;padding:2px 8px;border-radius:4px;
+            background:#21262d;color:#8b949e;margin-left:6px}
+.winner-crown{font-size:16px;margin-right:4px}
+
+/* ── Season standings highlights ─────────────────────────────*/
+.season-leader{background:linear-gradient(135deg,#2d2000,#1a1400);
+               border:1px solid #d29922;border-radius:8px;
+               padding:10px 14px;margin-bottom:6px;
+               display:flex;align-items:center;gap:10px}
+.season-striking{background:#0d2d45;border:1px solid #388bfd;
+                 border-radius:8px;padding:8px 14px;
+                 margin-bottom:4px;
+                 display:flex;align-items:center;gap:10px}
+.season-normal{display:flex;align-items:center;gap:10px;
+               padding:8px 14px;border-bottom:1px solid #21262d}
+.season-last{background:#2d0f0f;border:1px solid #da3633;
+             border-radius:8px;padding:8px 14px;
+             margin-top:4px;
+             display:flex;align-items:center;gap:10px}
+.season-rank{width:32px;text-align:center;font-weight:700;
+             font-size:14px;color:#8b949e;flex-shrink:0}
+.season-name{flex:1;font-size:14px}
+.season-score{font-size:13px;font-weight:600;color:#3fb950}
+.striking-badge{font-size:11px;padding:2px 8px;border-radius:4px;
+                background:#0d2d45;color:#58a6ff;
+                border:1px solid #388bfd;margin-left:6px}
+.season-divider{font-size:11px;color:#484f58;
+                text-align:center;padding:6px 0;
+                border-top:1px dashed #21262d;
+                border-bottom:1px dashed #21262d;
+                margin:6px 0}
+
+/* ── Chaos rankings clarity ──────────────────────────────────*/
+.chaos-explainer{font-size:12px;color:#8b949e;
+                 margin-bottom:16px;line-height:1.6;
+                 padding:10px 12px;border-radius:8px;
+                 background:#161b22;border:1px solid #21262d}
+.chaos-level-badge{font-size:11px;font-weight:700;
+                   padding:2px 8px;border-radius:4px;
+                   margin-left:8px}
+.chaos-level-high{background:#2d0f0f;color:#f85149;
+                  border:1px solid #da3633}
+.chaos-level-med{background:#2d1b00;color:#d29922;
+                 border:1px solid #d29922}
+.chaos-level-low{background:#21262d;color:#8b949e;
+                 border:1px solid #30363d}
+.chaos-pickers{font-size:11px;color:#484f58;margin-top:3px}
 .alert{padding:12px 14px;border-radius:8px;font-size:14px;
        margin-bottom:14px}
 .alert-error{background:#2d0f0f;color:#f85149;
@@ -384,7 +462,7 @@ body{font-family:system-ui,sans-serif;background:#0d1117;
       <button class="btn-tab" id="tab-rooting"
               onclick="showTab('rooting')">
         🔥 Rooting Guide</button>
-      <button class="btn-tab hidden" id="tab-facts"
+      <button class="btn-tab" id="tab-facts"
               onclick="showTab('facts')">
         📊 Fun Facts</button>
     </div>
@@ -428,24 +506,49 @@ body{font-family:system-ui,sans-serif;background:#0d1117;
     </div>
 
     <!-- LEADERBOARD TAB -->
-    <div id="view-leaderboard" class="hidden">
-      <div id="lb-loading" class="spinner">Loading...</div>
-      <div id="lb-content" class="hidden">
-        <div class="card">
-          <h2>Week <span id="lb-week-num"></span>
-            Standings</h2>
-          <div id="lb-weekly"></div>
-        </div>
-        <div class="card">
-          <h2>Season Standings</h2>
-          <div id="lb-season"></div>
-        </div>
-        <div id="lb-allpicks" class="card hidden">
-          <h2>Everyone's Picks This Week</h2>
-          <div id="lb-picks-grid"></div>
-        </div>
+<div id="view-leaderboard" class="hidden">
+  <div id="lb-loading" class="spinner">Loading...</div>
+  <div id="lb-content" class="hidden">
+
+    <div class="lb-subtabs">
+      <button class="lb-subtab-btn active" id="lbsub-weekly"
+              onclick="showLbSubtab('weekly')">
+        Weekly Standings</button>
+      <button class="lb-subtab-btn" id="lbsub-season"
+              onclick="showLbSubtab('season')">
+        Season Standings</button>
+      <button class="lb-subtab-btn" id="lbsub-picks"
+              onclick="showLbSubtab('picks')">
+        Everyone's Picks</button>
+    </div>
+
+    <!-- Weekly Standings -->
+    <div id="lb-sub-weekly">
+      <div class="card">
+        <h2>Week <span id="lb-week-num"></span> Standings</h2>
+        <div id="lb-weekly"></div>
       </div>
     </div>
+
+    <!-- Season Standings -->
+    <div id="lb-sub-season" class="hidden">
+      <div class="card">
+        <h2>Season Standings</h2>
+        <div id="lb-season"></div>
+      </div>
+    </div>
+
+    <!-- Everyone's Picks -->
+    <div id="lb-sub-picks" class="hidden">
+      <div class="card">
+        <h2>Everyone's Picks This Week</h2>
+        <div id="lb-picks-grid"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 
     <!-- ROOTING GUIDE TAB -->
     <div id="view-rooting" class="hidden">
@@ -490,6 +593,15 @@ body{font-family:system-ui,sans-serif;background:#0d1117;
             <span class="refresh-info"
                   id="rg-refresh-info"></span>
           </div>
+                    <div class="chaos-explainer">
+            <strong style="color:#c9d1d9">How to read this:</strong>
+            Games are ranked by how much they'll shake up the standings.
+            High chaos = lots of players picked this game AND the pool
+            is divided on who will cover. A 50/50 split on a game
+            40 people picked matters far more than total agreement
+            on a game only 5 people cared about.
+          </div>
+          <div id="rg-games"></div>
           <div id="rg-games"></div>
         </div>
       </div>
@@ -699,6 +811,15 @@ function showTab(tab) {
   if (tab==='picks')       { startDeadlineTimer(); }
 }
 
+function showLbSubtab(tab) {
+  ['weekly','season','picks'].forEach(function(t) {
+    document.getElementById('lb-sub-' + t)
+      .classList.toggle('hidden', t !== tab);
+    document.getElementById('lbsub-' + t)
+      .classList.toggle('active', t === tab);
+  });
+}
+  
 // ── COUNTDOWN TIMER ───────────────────────────────────────────
 function getThisSaturdayNoon() {
   var now     = new Date();
@@ -830,11 +951,6 @@ function loadPicksTab() {
       document.getElementById('picks-content')
               .classList.remove('hidden');
       startDeadlineTimer();
-      // Show post-deadline tabs
-      if (Date.now()>=getThisSaturdayNoon()){
-        document.getElementById('tab-facts')
-                .classList.remove('hidden');
-      }
     }
   );
 }
@@ -1270,27 +1386,28 @@ function submitPicks(){
 }
 
 // ── LEADERBOARD ───────────────────────────────────────────────
-function loadLeaderboard(){
+function loadLeaderboard() {
   document.getElementById('lb-loading')
           .classList.remove('hidden');
   document.getElementById('lb-content')
           .classList.add('hidden');
-  api({action:'getLeaderboard',playerId:player.playerId,
-       showPicks:true},function(res){
+  api({
+    action:    'getLeaderboard',
+    playerId:  player.playerId,
+    showPicks: true,
+  }, function(res) {
     document.getElementById('lb-loading')
             .classList.add('hidden');
-    if(!res.success){return;}
+    if (!res.success) { return; }
     document.getElementById('lb-week-num')
-            .textContent=res.week;
-    renderLbList('lb-weekly',res.weekly,true);
-    renderLbList('lb-season',res.season,false);
-    if(res.weekOver&&res.allPicks.length>0){
-      renderAllPicks(res.allPicks);
-      document.getElementById('lb-allpicks')
-              .classList.remove('hidden');
-    }
+            .textContent = res.week;
+    renderWeeklyGrouped('lb-weekly', res.weeklyPlayers);
+    renderSeasonStandings('lb-season', res.season);
+    renderPicksSection(res);
     document.getElementById('lb-content')
             .classList.remove('hidden');
+    // Always start on Weekly tab
+    showLbSubtab('weekly');
   });
 }
 
@@ -1322,26 +1439,301 @@ var score = showAllSix
 function renderAllPicks(allPicks) {
   var grid = document.getElementById('lb-picks-grid');
   allPicks.sort(function(a, b) {
-    return (b.correct || 0) - (a.correct || 0);
+    return (b.correct||0) - (a.correct||0);
   });
   grid.innerHTML = allPicks.map(function(p) {
     var chips = p.picks.map(function(pk) {
       var label = pk.pick.indexOf('Draw:') === 0
         ? 'Draw (' + pk.pick.split(':')[1] + ')' : pk.pick;
-      var chipStyle = pk.status === 'correct'
-        ? 'pick-chip'         // green — existing style
-        : pk.status === 'wrong'
-        ? 'pick-chip pick-chip-wrong'  // red — new style
-        : 'pick-chip pick-chip-pending'; // grey — new style
-      return '<span class="' + chipStyle + '">' +
-             label + '</span>';
+      var cls = pk.status === 'correct' ? 'pick-chip' :
+                pk.status === 'wrong'   ? 'pick-chip pick-chip-wrong' :
+                                          'pick-chip pick-chip-pending';
+      return '' + label + '';
     }).join('');
-    return '<div class="lb-row" style="flex-wrap:wrap;gap:6px">' +
-      '<span class="lb-name" style="width:100%">' + p.name +
-      ' <span style="color:#8b949e;font-size:13px">(' +
-      (p.correct || 0) + '/6 correct)</span></span>' +
-      chips + '</div>';
+    return '
+' +
+      '' + p.name +
+      ' (' +
+      (p.correct||0) + '/6 correct)' +
+      chips + '
+';
   }).join('');
+}
+
+function renderWeeklyGrouped(elId, players) {
+  var el = document.getElementById(elId);
+  if (!players || players.length === 0) {
+    el.innerHTML = '
+' +
+      'No data yet.
+
+';
+    return;
+  }
+
+  // Separate into buckets
+  var winners   = players.filter(function(p) { return p.allSix; });
+  var byCorrect = {};
+  var noPicks   = [];
+
+  players.forEach(function(p) {
+    if (p.allSix) { return; } // handled separately
+    if (!p.hasPicks) {
+      noPicks.push(p);
+      return;
+    }
+    var key = p.correct;
+    if (!byCorrect[key]) { byCorrect[key] = []; }
+    byCorrect[key].push(p);
+  });
+
+  var html = '';
+
+  // ── Winners (6/6) ─────────────────────────────────────────
+  if (winners.length > 0) {
+    html += '
+' +
+      '
+' +
+      '🏆' +
+      '6 CORRECT — WINNER' +
+      (winners.length > 1
+        ? ' ' +
+          '(' + winners.length + ' way tie!)'
+        : '') +
+      '
+';
+    winners.forEach(function(p) {
+      html += playerRow(p, '#d29922', true);
+    });
+    html += '
+';
+  }
+
+  // ── Active groups 5 down to 1 ─────────────────────────────
+  [5,4,3,2,1].forEach(function(n) {
+    var group = byCorrect[n];
+    if (!group || group.length === 0) { return; }
+
+    // Split alive vs eliminated within this group
+    var alive = group.filter(function(p) {
+      return !p.isEliminated;
+    });
+    var elim  = group.filter(function(p) {
+      return p.isEliminated;
+    });
+
+    if (alive.length > 0) {
+      html += '
+' +
+        '
+✅ ' + n +
+        ' correct — still alive ' +
+        '(' + alive.length + ' player' +
+        (alive.length !== 1 ? 's' : '') + ')
+';
+      alive.forEach(function(p) {
+        html += playerRow(p, '#3fb950', false);
+      });
+      html += '
+';
+    }
+
+    if (elim.length > 0) {
+      html += '
+' +
+        '
+💀 ' + n +
+        ' correct — eliminated ' +
+        '(' + elim.length + ' player' +
+        (elim.length !== 1 ? 's' : '') + ')
+';
+      elim.forEach(function(p) {
+        html += playerRow(p, '#8b949e', false);
+      });
+      html += '
+';
+    }
+  });
+
+  // ── 0 correct ─────────────────────────────────────────────
+  if (byCorrect[0] && byCorrect[0].length > 0) {
+    html += '
+' +
+      '
+💀 0 correct — eliminated ' +
+      '(' + byCorrect[0].length + ' player' +
+      (byCorrect[0].length !== 1 ? 's' : '') + ')
+';
+    byCorrect[0].forEach(function(p) {
+      html += playerRow(p, '#8b949e', false);
+    });
+    html += '
+';
+  }
+
+  // ── No picks submitted ────────────────────────────────────
+  if (noPicks.length > 0) {
+    html += '
+' +
+      '
+😬 No picks submitted — ' +
+      noPicks.length + ' player' +
+      (noPicks.length !== 1 ? 's' : '') + '
+';
+    noPicks.forEach(function(p) {
+      html += '
+' +
+        '' + p.name + '' +
+        '' +
+        'Did not submit picks
+';
+    });
+    html += '
+';
+  }
+
+  el.innerHTML = html;
+}
+
+function playerRow(p, color, isWinner) {
+  var scoreStr = isWinner
+    ? '🏆 Perfect week!'
+    : p.correct + '/' + (p.graded + p.pending) +
+      ' correct';
+  var pendingBadge = p.pending > 0
+    ? '⏳ ' + p.pending +
+      ' game' + (p.pending !== 1 ? 's' : '') +
+      ' pending'
+    : '';
+  return '
+' +
+    '' + p.name + '' +
+    '' + scoreStr + '' +
+    pendingBadge + '
+';
+}
+
+function renderSeasonStandings(elId, players) {
+  var el = document.getElementById(elId);
+  if (!players || players.length === 0) {
+    el.innerHTML = '
+' +
+      'No season data yet.
+
+';
+    return;
+  }
+
+  // Sort and assign true tied ranks
+  players.sort(function(a, b) {
+    if (b.correct !== a.correct) {
+      return b.correct - a.correct;
+    }
+    return parseFloat(b.pct) - parseFloat(a.pct);
+  });
+
+  var rank = 1;
+  players.forEach(function(p, i) {
+    if (i > 0 && players[i-1].correct !== p.correct) {
+      rank = i + 1;
+    }
+    p.displayRank = rank;
+  });
+
+  var leaderCorrect = players[0] ? players[0].correct : 0;
+  var lowestCorrect = players[players.length-1].correct;
+  var totalPlayers  = players.length;
+
+  var html = '';
+  var shownDivider  = false;
+
+  players.forEach(function(p, i) {
+    var isLeader    = p.displayRank === 1;
+    var isStriking  = !isLeader &&
+                      (leaderCorrect - p.correct) <= 6 &&
+                      leaderCorrect > 0;
+    var isLast      = p.correct === lowestCorrect &&
+                      p.displayRank > 1 &&
+                      p.displayRank === players[players.length-1].displayRank;
+
+    // Divider between striking and non-striking
+    if (!shownDivider && !isLeader && !isStriking &&
+        leaderCorrect > 0) {
+      html += '
+' +
+        '— rest of the field —
+';
+      shownDivider = true;
+    }
+
+    var pct = parseFloat(p.pct) || 0;
+    var pctDisplay = pct < 1
+      ? (pct * 100).toFixed(1) + '%'
+      : pct.toFixed(1) + '%';
+    var scoreStr = p.correct + ' correct · ' + pctDisplay;
+
+    var cls = isLeader   ? 'season-leader'   :
+              isStriking ? 'season-striking'  :
+              isLast     ? 'season-last'      : 'season-normal';
+
+    var rankStr = isLeader ? '🥇' :
+                  p.displayRank === 2 ? '🥈' :
+                  p.displayRank === 3 ? '🥉' :
+                  p.displayRank + '.';
+
+    var badge = isLeader
+      ? '' +
+        'LEADER'
+      : isStriking
+      ? 'within striking distance'
+      : isLast
+      ? 'last place'
+      : '';
+
+    html += '
+' +
+      '' + rankStr + '' +
+      '' + p.name + badge + '' +
+      '' + scoreStr + '' +
+      '
+';
+  });
+
+  el.innerHTML = html;
+}
+
+function renderPicksSection(res) {
+  var el = document.getElementById('lb-picks-grid');
+  if (!res.weekOver) {
+    el.innerHTML =
+      '
+' +
+      '
+' +
+      '🔒
+' +
+      '
+' +
+      'Not yet available
+' +
+      '
+' +
+      'Everyone\'s picks are revealed after ' +
+      'Saturday noon when picks lock.
+';
+    return;
+  }
+  if (!res.allPicks || res.allPicks.length === 0) {
+    el.innerHTML =
+      '
+' +
+      'No picks to show yet.
+
+';
+    return;
+  }
+  renderAllPicks(res.allPicks);
 }
 
 // ── ROOTING GUIDE ─────────────────────────────────────────────
@@ -1635,29 +2027,43 @@ function renderGamesView(data){
     }
 
     var lc='league-'+g.league.toLowerCase();
-    var div=document.createElement('div');
-    div.className='chaos-game';
-    div.innerHTML=
-      '<div class="chaos-header">'+
-      '<div>'+
-      '<div class="chaos-teams">'+
-      '<span class="league-badge '+lc+'">'+
-      g.league+'</span> '+
-      g.awayTeam+' @ '+g.homeTeam+'</div>'+
-      '<div class="chaos-spread">'+spreadStr+'</div>'+
-      '</div>'+
-      '<div class="chaos-fire">'+fire+'</div>'+
-      '</div>'+
-      '<div class="chaos-bar">'+
-      '<div class="chaos-bar-away" style="width:'+
-      awayPct+'%"></div>'+
-      '<div class="chaos-bar-draw" style="width:'+
-      drawPct+'%"></div>'+
-      '<div class="chaos-bar-home" style="width:'+
-      homePct+'%"></div></div>'+
-      '<div class="chaos-labels">'+distLabels+'</div>'+
-      rootingHtml+
-      '<div style="margin-top:6px">'+resultHtml+'</div>';
+    var totalPickers = counts.total;
+    var chaosLevel   = chaos >= 60 ? 'HIGH CHAOS' :
+                       chaos >= 30 ? 'MEDIUM'      : 'LOW';
+    var chaosClass   = chaos >= 60 ? 'chaos-level-high' :
+                       chaos >= 30 ? 'chaos-level-med'  :
+                                     'chaos-level-low';
+    var fire         = chaos >= 60 ? '🔥🔥🔥' :
+                       chaos >= 30 ? '🔥🔥'    : '🔥';
+
+    var lc  = 'league-' + g.league.toLowerCase();
+    var div = document.createElement('div');
+    div.className = 'chaos-game';
+    div.innerHTML =
+      '<div class="chaos-header">' +
+      '<div>' +
+      '<div class="chaos-teams">' +
+      '<span class="league-badge ' + lc + '">' +
+      g.league + '</span> ' +
+      g.awayTeam + ' @ ' + g.homeTeam +
+      '<span class="chaos-level-badge ' + chaosClass + '">' +
+      chaosLevel + '</span></div>' +
+      '<div class="chaos-spread">' + spreadStr + '</div>' +
+      '<div class="chaos-pickers">' + fire + ' ' +
+      totalPickers + ' of ' +
+      (rgData ? rgData.totalPlayers : '?') +
+      ' players picked this game</div>' +
+      '</div></div>' +
+      '<div class="chaos-bar">' +
+      '<div class="chaos-bar-away" style="width:' +
+      awayPct + '%"></div>' +
+      '<div class="chaos-bar-draw" style="width:' +
+      drawPct + '%"></div>' +
+      '<div class="chaos-bar-home" style="width:' +
+      homePct + '%"></div></div>' +
+      '<div class="chaos-labels">' + distLabels + '</div>' +
+      rootingHtml +
+      '<div style="margin-top:6px">' + resultHtml + '</div>';
     el.appendChild(div);
   });
 }
