@@ -1181,9 +1181,15 @@ function renderGamesView(data) {
     var drawPct = Math.round((c.draw / total) * 100);
     var chaos   = rgChaosWeight === 'season' ? g.chaosScoreSeason : g.chaosScoreWeek;
 
-    var chaosLevel = chaos >= 60 ? 'HIGH CHAOS' : chaos >= 30 ? 'MEDIUM' : 'LOW';
-    var chaosClass = chaos >= 60 ? 'chaos-level-high' : chaos >= 30 ? 'chaos-level-med' : 'chaos-level-low';
-    var fire       = chaos >= 60 ? '🔥🔥🔥' : chaos >= 30 ? '🔥🔥' : '🔥';
+    var chaosLevel = g.status === 'final' ? 'COMPLETED' :
+                     chaos >= 80 ? 'HIGH CHAOS' :
+                     chaos >= 50 ? 'MEDIUM' : 'LOW';
+    var chaosClass = g.status === 'final' ? 'chaos-level-low' :
+                     chaos >= 80 ? 'chaos-level-high' :
+                     chaos >= 50 ? 'chaos-level-med' : 'chaos-level-low';
+    var fire       = g.status === 'final' ? '' :
+                     chaos >= 80 ? '🔥🔥🔥' :
+                     chaos >= 50 ? '🔥🔥' : '🔥';
     var totalPickers = c.total;
 
     var spreadStr = g.gameType === 'moneyline' ? 'Moneyline' : (g.spread && g.spread !== 'TBD' ? g.favoredTeam + ' ' + g.spread : 'Line TBD');
@@ -1227,7 +1233,8 @@ function renderGamesView(data) {
       g.awayTeam + ' @ ' + g.homeTeam +
       '<span class="chaos-level-badge ' + chaosClass + '">' + chaosLevel + '</span></div>' +
       '<div class="chaos-spread">' + spreadStr + '</div>' +
-      '<div class="chaos-pickers">' + fire + ' ' + totalPickers + ' of ' + (rgData ? rgData.totalPlayers : '?') + ' players picked this game</div>' +
+      (g.status === 'final' ? '' :
+        '<div class="chaos-pickers">' + fire + ' ' + totalPickers + ' of ' + (rgData ? rgData.totalPlayers : '?') + ' players picked this game</div>') +
       '</div></div>' +
       '<div class="chaos-bar">' +
       '<div class="chaos-bar-away" style="width:' + awayPct + '%"></div>' +
