@@ -701,11 +701,12 @@ function showTab(tab) {
 
 // ── COUNTDOWN TIMER ───────────────────────────────────────────
 function getThisSaturdayNoon() {
-  var now  = new Date();
-  var days = (6-now.getDay()+7)%7;
-  var sat  = new Date(now);
-  sat.setDate(sat.getDate()+days);
-  sat.setHours(12,0,0,0);
+  var now     = new Date();
+  var day     = now.getDay();
+  var offsets = [-1, -2, 4, 3, 2, 1, 0];
+  var sat     = new Date(now);
+  sat.setDate(sat.getDate() + offsets[day]);
+  sat.setHours(12, 0, 0, 0);
   return sat.getTime();
 }
 
@@ -800,11 +801,14 @@ function pad2(n) {
 }
 
 function getGameDeadlineMs(kickoff) {
-  var d = new Date(kickoff).getDay();
-  // Tue-Fri: lock at kickoff
-  if (d >= 2 && d <= 5) { return kickoff; }
-  // Otherwise: Saturday noon
-  return getThisSaturdayNoon();
+  var d   = new Date(kickoff);
+  var day = d.getDay();
+  if (day >= 2 && day <= 5) { return kickoff; }
+  var offsets = [-1, -2, 4, 3, 2, 1, 0];
+  var sat = new Date(d);
+  sat.setDate(sat.getDate() + offsets[day]);
+  sat.setHours(12, 0, 0, 0);
+  return sat.getTime();
 }
 
 // ── PICKS TAB ─────────────────────────────────────────────────
