@@ -460,12 +460,13 @@ function api(payload, cb, _retryCount) {
   var controller  = new AbortController();
   var timeoutId   = setTimeout(function() { controller.abort(); }, 15000);
 
-  fetch(API_URL, {
+    fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify(payload),
     signal: controller.signal,
-  })
+    redirect: 'follow',
+})
   .then(function(r) { clearTimeout(timeoutId); return r.text(); })
   .then(function(text) {
     if (text.trim().charAt(0) === '<') { throw new Error('server_busy'); }
