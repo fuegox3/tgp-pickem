@@ -190,6 +190,13 @@ body{font-family:system-ui,sans-serif;background:#0d1117;color:#e6edf3;min-heigh
 .grid-legend{display:flex;gap:12px;margin-top:8px;flex-wrap:wrap;font-size:11px}
 .legend-item{display:flex;align-items:center;gap:4px}
 .legend-dot{width:10px;height:10px;border-radius:2px}
+.picks-confirmed{
+  background:#0a2218!important;
+  border:2px solid #3fb950!important;
+}
+.picks-confirmed h3{
+  color:#3fb950!important;
+}
 /* Fun Facts */
 .fact-card{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;margin-bottom:12px}
 .fact-label{font-size:11px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
@@ -808,13 +815,66 @@ function refreshButtonStates() {
 }
 
 function submitPicks() {
-  if (selectedPicks.length === 0) { showAlert('picks-alert', 'Select at least one pick before saving.', 'error'); return; }
+  if (selectedPicks.length === 0) {
+    showAlert('picks-alert',
+      'Select at least one pick before saving.', 'error');
+    return;
+  }
   var btn = document.getElementById('submit-btn');
   btn.disabled = true; btn.textContent = 'Saving...';
-  api({ action: 'submitPicks', playerId: player.playerId, picks: selectedPicks }, function(res) {
+
+  api({
+    action:   'submitPicks',
+    playerId: player.playerId,
+    picks:    selectedPicks,
+  }, function(res) {
     btn.disabled = false;
-    updatePicksSummary();
-    showAlert('picks-alert', res.success ? res.message : res.error, res.success ? 'success' : 'error');
+    if (res.success) {
+      // Show confirmed state
+      var now = new Date();
+      var timeStr = now.toLocaleTimeString('en-US', {
+        hour: 'numeric', minute: '2-digit',
+        timeZoneName: 'short',
+      });
+      btn.textContent = '✓ Picks Saved';
+      btn.style.background = '#1a5c2a';
+      btn.style.color = '#3fb950';
+      btn.style.border = '1px solid #238636';
+
+      // Update summary to confirmed state
+      var summary = document.getElementById('picks-summary');
+      summary.style.background = '#0a2218';
+      summary.style.border = '1px solid #3fb950';
+
+      var heading = summary.querySelector('h3');
+      if (heading) {
+        heading.innerHTML = '✅ Picks confirmed (' +
+          selectedPicks.length + '/6) · Saved at ' +
+          timeStr;
+        heading.style.color = '#3fb950';
+      }
+
+      showAlert('picks-alert',
+        '✓ Saved! A confirmation email is on its way.',
+        'success');
+
+      // Reset button appearance after 10 seconds
+      // but keep confirmed state on summary
+      setTimeout(function() {
+        btn.textContent = selectedPicks.length === 6
+          ? '✓ Update Picks' : 'Save Picks';
+        btn.style.background = '';
+        btn.style.color = '';
+        btn.style.border = '';
+      }, 10000);
+
+    } else {
+      btn.textContent = selectedPicks.length === 6
+        ? 'Save All 6 Picks'
+        : 'Save ' + selectedPicks.length + ' Pick' +
+          (selectedPicks.length !== 1 ? 's' : '');
+      showAlert('picks-alert', res.error, 'error');
+    }
   });
 }
 
