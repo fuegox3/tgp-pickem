@@ -998,11 +998,36 @@ function renderWeeklyGrouped(elId, players) {
     }
   });
 
-  if (byCorrect[0] && byCorrect[0].length > 0) {
-    html += '<div class="lb-group lb-group-eliminated"><div class="lb-group-header">💀 0 correct — eliminated (' + byCorrect[0].length + ' player' + (byCorrect[0].length !== 1 ? 's' : '') + ')</div>';
-    byCorrect[0].forEach(function(p) { html += playerRow(p, '#8b949e', false); });
+if (byCorrect[0] && byCorrect[0].length > 0) {
+  var aliveZero = byCorrect[0].filter(function(p) {
+    return !p.isEliminated;
+  });
+  var elimZero = byCorrect[0].filter(function(p) {
+    return p.isEliminated;
+  });
+
+  if (aliveZero.length > 0) {
+    html += '<div class="lb-group lb-group-alive">' +
+      '<div class="lb-group-header">✅ 0 correct — still alive (' +
+      aliveZero.length + ' player' +
+      (aliveZero.length !== 1 ? 's' : '') + ')</div>';
+    aliveZero.forEach(function(p) {
+      html += playerRow(p, '#3fb950', false);
+    });
     html += '</div>';
   }
+
+  if (elimZero.length > 0) {
+    html += '<div class="lb-group lb-group-eliminated">' +
+      '<div class="lb-group-header">💀 0 correct — eliminated (' +
+      elimZero.length + ' player' +
+      (elimZero.length !== 1 ? 's' : '') + ')</div>';
+    elimZero.forEach(function(p) {
+      html += playerRow(p, '#8b949e', false);
+    });
+    html += '</div>';
+  }
+}
 
   if (noPicks.length > 0) {
     html += '<div class="lb-group lb-group-nopicks"><div class="lb-group-header">😬 No picks submitted — ' + noPicks.length + ' player' + (noPicks.length !== 1 ? 's' : '') + '</div>';
