@@ -37,12 +37,34 @@ body{font-family:system-ui,sans-serif;background:#0d1117;color:#e6edf3;min-heigh
 .game-teams{font-size:15px;font-weight:500}
 .game-info{font-size:12px;color:#8b949e;margin-top:3px}
 .game-pick{display:flex;gap:6px;flex-wrap:wrap}
-.pick-btn{padding:7px 10px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid #30363d;background:#21262d;color:#c9d1d9;transition:all .15s}
+.pick-btn{padding:7px 10px;border-radius:6px;font-size:12px;
+          font-weight:500;cursor:pointer;
+          border:1px solid #21262d;background:#0d1117;
+          color:#484f58;transition:all .15s}
 .pick-btn:hover:not(:disabled){border-color:#388bfd;color:#58a6ff}
 .pick-btn.selected{background:#0d419d;border-color:#388bfd;color:#58a6ff}
 .pick-btn-draw{background:#1f2937;border-color:#6b7280;color:#9ca3af}
 .pick-btn-draw.selected{background:#1e3a5f;border-color:#60a5fa;color:#93c5fd}
 .pick-btn:disabled{opacity:.5;cursor:not-allowed}
+.pick-btn:focus{outline:none}
+.pick-btn-draw:focus{outline:none}
+.save-prompt{position:fixed;bottom:0;left:0;right:0;
+             z-index:100;padding:12px 16px;
+             background:linear-gradient(135deg,#0f2d1f,#0d2d1f);
+             border-top:2px solid #238636;
+             animation:slideUp .3s ease-out}
+.save-prompt-inner{max-width:1100px;margin:0 auto;
+                   display:flex;justify-content:space-between;
+                   align-items:center;gap:16px}
+.save-prompt-inner span{font-size:14px;font-weight:600;
+                        color:#3fb950}
+.save-prompt-btn{padding:8px 20px;border-radius:8px;
+                 border:none;background:#238636;color:#fff;
+                 font-size:14px;font-weight:600;cursor:pointer;
+                 white-space:nowrap}
+.save-prompt-btn:hover{background:#2ea043}
+@keyframes slideUp{from{transform:translateY(100%)}
+                   to{transform:translateY(0)}}
 .locked-badge{font-size:11px;color:#8b949e;background:#21262d;padding:3px 8px;border-radius:4px}
 .league-badge{font-size:11px;padding:2px 7px;border-radius:4px;font-weight:600}
 .league-nfl{background:#0d2d45;color:#58a6ff}
@@ -273,6 +295,14 @@ body{font-family:system-ui,sans-serif;background:#0d1117;color:#e6edf3;min-heigh
           <p style="font-size:12px;color:#8b949e;margin-top:6px">Exports all games with spreads and your current picks for offline research.</p>
         </div>
       </div>
+      <div id="save-prompt" class="hidden">
+  <div class="save-prompt-inner">
+    <span>You've made all 6 picks!</span>
+    <button onclick="submitPicks()" class="save-prompt-btn">
+      Save Picks ✓
+    </button>
+  </div>
+</div>
     </div>
 
     <!-- LEADERBOARD TAB -->
@@ -361,6 +391,7 @@ var rgChaosWeight = 'week';
 var rgRefreshTimer = null;
 var rgCountdown   = 60;
 var deadlineTimer = null;
+var serverSaturdayNoon = null;
 
 // ── Init ──────────────────────────────────────────────────────
 window.onload = function() {
@@ -558,7 +589,7 @@ function pad2(n) { return n < 10 ? '0' + n : '' + n; }
 
 function updateDeadlineBanner() {
   var banner  = document.getElementById('deadline-banner');
-  var satNoon = getThisSaturdayNoon();
+  var satNoon = serverSaturdayNoon || getThisSaturdayNoon();
   var now     = Date.now();
   var diff    = satNoon - now;
 
@@ -623,6 +654,7 @@ function loadPicksTab() {
     document.getElementById('picks-loading').classList.add('hidden');
     if (!res.success) { showAlert('picks-alert', res.error, 'error'); return; }
     weekData = res;
+    serverSaturdayNoon = res.saturdayNoon;
     selectedPicks = res.myPicks.slice();
     renderGames(res);
     document.getElementById('picks-content').classList.remove('hidden');
@@ -660,7 +692,7 @@ function renderGames(data) {
     list.appendChild(hdr);
 
     lg.forEach(function(g) {
-      var deadline = getGameDeadlineMs(g.kickoff);
+      var deadline = g.deadline; // server-provided ET deadline
       var locked   = now >= deadline || g.status === 'final';
       if (!locked) { anyEditable = true; }
       var isMls = g.gameType === 'moneyline';
@@ -803,6 +835,14 @@ function updatePicksSummary() {
   if (submitBtn) {
     submitBtn.textContent = count === 6 ? 'Save All 6 Picks' : 'Save ' + count + ' Pick' + (count !== 1 ? 's' : '');
   }
+    var savePrompt = document.getElementById('save-prompt');
+  if (savePrompt) {
+    if (count === 6) {
+      savePrompt.classList.remove('hidden');
+    } else {
+      savePrompt.classList.add('hidden');
+    }
+  }
 }
 
 function refreshButtonStates() {
@@ -868,6 +908,10 @@ function submitPicks() {
         btn.style.border = '';
       }, 10000);
 
+        // Add this inside the res.success block:
+  var savePrompt = document.getElementById('save-prompt');
+  if (savePrompt) { savePrompt.classList.add('hidden'); }
+      
     } else {
       btn.textContent = selectedPicks.length === 6
         ? 'Save All 6 Picks'
@@ -961,78 +1005,87 @@ function loadLeaderboard() {
 function renderWeeklyGrouped(elId, players) {
   var el = document.getElementById(elId);
   if (!players || players.length === 0) {
-    el.innerHTML = '<p style="color:#8b949e;font-size:14px">No data yet.</p>'; return;
+    el.innerHTML = '<p style="color:#8b949e;font-size:14px">No data yet.</p>';
+    return;
   }
-  var winners = players.filter(function(p) { return p.allSix; });
-  var byCorrect = {}, noPicks = [];
-  players.forEach(function(p) {
-    if (p.allSix) { return; }
-    if (!p.hasPicks) { noPicks.push(p); return; }
-    if (!byCorrect[p.correct]) { byCorrect[p.correct] = []; }
-    byCorrect[p.correct].push(p);
-  });
+
+  var winners  = players.filter(function(p) { return p.allSix; });
+  var alive    = players.filter(function(p) { return !p.allSix && p.hasPicks && !p.isEliminated; });
+  var elim     = players.filter(function(p) { return p.hasPicks && p.isEliminated; });
+  var noPicks  = players.filter(function(p) { return !p.hasPicks; });
+
+  // Sort each group by correct count descending
+  function byCorrect(a, b) { return b.correct - a.correct; }
+  alive.sort(byCorrect);
+  elim.sort(byCorrect);
 
   var html = '';
 
+  // Winners
   if (winners.length > 0) {
-    html += '<div class="lb-group lb-group-winner"><div class="lb-group-header"><span class="winner-crown">🏆</span>6 CORRECT — WINNER' +
-      (winners.length > 1 ? ' <span style="font-size:12px;font-weight:400">(' + winners.length + ' way tie!)</span>' : '') + '</div>';
+    html += '<div class="lb-group lb-group-winner">' +
+      '<div class="lb-group-header"><span class="winner-crown">🏆</span>' +
+      '6 CORRECT — WINNER' +
+      (winners.length > 1
+        ? ' <span style="font-size:12px;font-weight:400">(' +
+          winners.length + ' way tie!)</span>' : '') +
+      '</div>';
     winners.forEach(function(p) { html += playerRow(p, '#d29922', true); });
     html += '</div>';
   }
 
-  [5,4,3,2,1].forEach(function(n) {
-    var group = byCorrect[n];
-    if (!group || group.length === 0) { return; }
-    var alive = group.filter(function(p) { return !p.isEliminated; });
-    var elim  = group.filter(function(p) { return p.isEliminated; });
-    if (alive.length > 0) {
-      html += '<div class="lb-group lb-group-alive"><div class="lb-group-header">✅ ' + n + ' correct — still alive (' + alive.length + ' player' + (alive.length !== 1 ? 's' : '') + ')</div>';
-      alive.forEach(function(p) { html += playerRow(p, '#3fb950', false); });
-      html += '</div>';
-    }
-    if (elim.length > 0) {
-      html += '<div class="lb-group lb-group-eliminated"><div class="lb-group-header">💀 ' + n + ' correct — eliminated (' + elim.length + ' player' + (elim.length !== 1 ? 's' : '') + ')</div>';
-      elim.forEach(function(p) { html += playerRow(p, '#8b949e', false); });
-      html += '</div>';
-    }
-  });
-
-if (byCorrect[0] && byCorrect[0].length > 0) {
-  var aliveZero = byCorrect[0].filter(function(p) {
-    return !p.isEliminated;
-  });
-  var elimZero = byCorrect[0].filter(function(p) {
-    return p.isEliminated;
-  });
-
-  if (aliveZero.length > 0) {
-    html += '<div class="lb-group lb-group-alive">' +
-      '<div class="lb-group-header">✅ 0 correct — still alive (' +
-      aliveZero.length + ' player' +
-      (aliveZero.length !== 1 ? 's' : '') + ')</div>';
-    aliveZero.forEach(function(p) {
-      html += playerRow(p, '#3fb950', false);
+  // All alive players sorted by correct count
+  if (alive.length > 0) {
+    // Group alive players by correct count for headers
+    var aliveGroups = {};
+    alive.forEach(function(p) {
+      if (!aliveGroups[p.correct]) { aliveGroups[p.correct] = []; }
+      aliveGroups[p.correct].push(p);
     });
-    html += '</div>';
+    Object.keys(aliveGroups).map(Number)
+      .sort(function(a,b){ return b-a; })
+      .forEach(function(n) {
+        var group = aliveGroups[n];
+        html += '<div class="lb-group lb-group-alive">' +
+          '<div class="lb-group-header">✅ ' + n +
+          ' correct — still alive (' + group.length + ' player' +
+          (group.length !== 1 ? 's' : '') + ')</div>';
+        group.forEach(function(p) { html += playerRow(p, '#3fb950', false); });
+        html += '</div>';
+      });
   }
 
-  if (elimZero.length > 0) {
-    html += '<div class="lb-group lb-group-eliminated">' +
-      '<div class="lb-group-header">💀 0 correct — eliminated (' +
-      elimZero.length + ' player' +
-      (elimZero.length !== 1 ? 's' : '') + ')</div>';
-    elimZero.forEach(function(p) {
-      html += playerRow(p, '#8b949e', false);
+  // All eliminated players sorted by correct count
+  if (elim.length > 0) {
+    var elimGroups = {};
+    elim.forEach(function(p) {
+      if (!elimGroups[p.correct]) { elimGroups[p.correct] = []; }
+      elimGroups[p.correct].push(p);
     });
-    html += '</div>';
+    Object.keys(elimGroups).map(Number)
+      .sort(function(a,b){ return b-a; })
+      .forEach(function(n) {
+        var group = elimGroups[n];
+        html += '<div class="lb-group lb-group-eliminated">' +
+          '<div class="lb-group-header">💀 ' + n +
+          ' correct — eliminated (' + group.length + ' player' +
+          (group.length !== 1 ? 's' : '') + ')</div>';
+        group.forEach(function(p) { html += playerRow(p, '#8b949e', false); });
+        html += '</div>';
+      });
   }
-}
 
+  // No picks submitted
   if (noPicks.length > 0) {
-    html += '<div class="lb-group lb-group-nopicks"><div class="lb-group-header">😬 No picks submitted — ' + noPicks.length + ' player' + (noPicks.length !== 1 ? 's' : '') + '</div>';
+    html += '<div class="lb-group lb-group-nopicks">' +
+      '<div class="lb-group-header">😬 No picks submitted — ' +
+      noPicks.length + ' player' + (noPicks.length !== 1 ? 's' : '') +
+      '</div>';
     noPicks.forEach(function(p) {
-      html += '<div class="lb-player-row"><span class="lb-player-name">' + p.name + '</span><span style="font-size:12px;color:#d29922">Did not submit picks</span></div>';
+      html += '<div class="lb-player-row">' +
+        '<span class="lb-player-name">' + p.name + '</span>' +
+        '<span style="font-size:12px;color:#d29922">' +
+        'Did not submit picks</span></div>';
     });
     html += '</div>';
   }
