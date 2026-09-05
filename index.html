@@ -1321,14 +1321,14 @@ function renderGamesView(data) {
     var chaos   = rgChaosWeight === 'season' ? g.chaosScoreSeason : g.chaosScoreWeek;
 
     var chaosLevel = g.status === 'final' ? 'COMPLETED' :
-                     chaos >= 80 ? 'HIGH CHAOS' :
-                     chaos >= 50 ? 'MEDIUM' : 'LOW';
+                     chaos >= 45 ? 'HIGH CHAOS' :
+                     chaos >= 25 ? 'MEDIUM' : 'LOW';
     var chaosClass = g.status === 'final' ? 'chaos-level-low' :
-                     chaos >= 80 ? 'chaos-level-high' :
-                     chaos >= 50 ? 'chaos-level-med' : 'chaos-level-low';
+                     chaos >= 45 ? 'chaos-level-high' :
+                     chaos >= 25 ? 'chaos-level-med' : 'chaos-level-low';
     var fire       = g.status === 'final' ? '' :
-                     chaos >= 80 ? '🔥🔥🔥' :
-                     chaos >= 50 ? '🔥🔥' : '🔥';
+                     chaos >= 45 ? '🔥🔥🔥' :
+                     chaos >= 25 ? '🔥🔥' : '🔥';
     var totalPickers = c.total;
 
     var spreadStr = g.gameType === 'moneyline' ? 'Moneyline' : (g.spread && g.spread !== 'TBD' ? g.favoredTeam + ' ' + g.spread : 'Line TBD');
