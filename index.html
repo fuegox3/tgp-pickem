@@ -1217,20 +1217,102 @@ function renderMyStatus(data) {
   var el = document.getElementById('rg-status');
   var me = data.me;
   if (!me) { el.innerHTML = ''; return; }
+
   var html = '';
+  var statusClass, badge, detail;
+
   if (me.pickCount < 6) {
-    html = '<div class="status-shame"><div class="status-badge shame">😬 Did Not Submit 6 Picks</div>' +
-      '<div class="status-detail">You submitted <strong>' + me.pickCount + '/6</strong> picks and are eliminated. Don\'t let this happen again.</div></div>';
+    statusClass = 'status-shame';
+    badge = '<div class="status-badge shame">😬 Did Not Submit 6 Picks</div>';
+    detail = 'You submitted <strong>' + me.pickCount + '/6</strong> picks and are eliminated. Don\'t let this happen again.';
   } else if (me.eliminated) {
-    html = '<div class="status-dead"><div class="status-badge dead">💀 Eliminated</div>' +
-      '<div class="status-detail">You got <strong>' + me.correct + '/6</strong> correct and are out for the week. Better luck next week.</div></div>';
+    statusClass = 'status-dead';
+    badge = '<div class="status-badge dead">💀 Eliminated</div>';
+    detail = 'You got <strong>' + me.correct + '/6</strong> correct and are out for the week. Better luck next week.';
   } else {
+    statusClass = 'status-alive';
+    badge = '<div class="status-badge alive">✅ Still Alive</div>';
     var rem = countMyRemaining(data);
     var needed = 6 - me.correct;
     var needStr = needed === 1 ? 'one more correct pick' : needed + ' more correct picks';
-    html = '<div class="status-alive"><div class="status-badge alive">✅ Still Alive</div>' +
-      '<div class="status-detail"><strong>' + me.correct + '/6</strong> correct · <strong>' + rem + '</strong> game' + (rem !== 1 ? 's' : '') + ' remaining · Need ' + needStr + ' to win</div></div>';
+    detail = '<strong>' + me.correct + '/6</strong> correct · <strong>' + rem + '</strong> game' + (rem !== 1 ? 's' : '') + ' remaining · Need ' + needStr + ' to win';
   }
+
+  // Build pick snapshot
+  var snapshot = '';
+  if (me.pickCount > 0) {
+    // Build game lookup from gamesByChoas
+    var gameByTeam = {};
+    (data.gamesByChoas || []).forEach(function(g) {
+      var spreadStr = g.gameType === 'moneyline' ? 'Moneyline' :
+        (g.spread && g.spread !== 'TBD' ? g.favoredTeam + ' ' + g.spread : 'Line TBD');
+      var kickStr = new Date(g.kickoff).toLocaleString('en-US', {
+        weekday: 'short', month: 'short', day: 'numeric',
+        hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York',
+        timeZoneName: 'short',
+      });
+      var info = { spreadStr: spreadStr, kickStr: kickStr,
+                   status: g.status, awayScore: g.awayScore,
+                   homeScore: g.homeScore, result: g.result,
+                   awayTeam: g.awayTeam, homeTeam: g.homeTeam };
+      gameByTeam[g.awayTeam] = info;
+      gameByTeam[g.homeTeam] = info;
+      if (g.gameType === 'moneyline') {
+        gameByTeam['Draw:' + g.awayTeam] = info;
+      }
+    });
+
+    snapshot += '<div style="margin-top:14px;border-top:1px solid rgba(255,255,255,0.1);padding-top:12px">';
+    snapshot += '<div style="font-size:11px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Your Picks This Week</div>';
+
+    me.picks.forEach(function(pick) {
+      var label = pick.indexOf('Draw:') === 0
+        ? 'Draw (' + pick.split(':')[1] + ')' : pick;
+      var g = gameByTeam[pick];
+
+      var statusIcon = '', statusColor = '#8b949e', extraInfo = '';
+
+      if (!g) {
+        statusIcon = '⏳';
+      } else if (g.status === 'final') {
+        var won = pick === g.result ||
+          (pick.indexOf('Draw:') === 0 && g.result === 'Draw');
+        statusIcon = won ? '✅' : '❌';
+        statusColor = won ? '#3fb950' : '#f85149';
+        extraInfo = g.awayTeam + ' ' + g.awayScore +
+          ', ' + g.homeTeam + ' ' + g.homeScore + ' (Final)';
+      } else if (g.status === 'in_progress') {
+        statusIcon = '⚡';
+        statusColor = '#d29922';
+        extraInfo = g.awayTeam + ' ' + g.awayScore +
+          ', ' + g.homeTeam + ' ' + g.homeScore + ' (Live)';
+      } else {
+        statusIcon = '⏳';
+        statusColor = '#8b949e';
+        extraInfo = g.spreadStr + ' · ' + g.kickStr;
+      }
+
+      snapshot +=
+        '<div style="display:flex;align-items:flex-start;gap:10px;' +
+        'padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06)">' +
+        '<span style="font-size:16px;flex-shrink:0">' + statusIcon + '</span>' +
+        '<div style="flex:1">' +
+        '<div style="font-size:14px;font-weight:600;color:' + statusColor + '">' +
+        label + '</div>' +
+        (extraInfo ? '<div style="font-size:12px;color:#8b949e;margin-top:2px">' +
+        extraInfo + '</div>' : '') +
+        '</div></div>';
+    });
+
+    snapshot += '</div>';
+  }
+
+  html = '<div class="' + statusClass + '">' +
+    badge +
+    '<div class="status-detail">' + detail + '</div>' +
+    snapshot +
+    '</div>';
+
   el.innerHTML = html;
 }
 
