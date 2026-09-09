@@ -101,10 +101,10 @@ body{font-family:system-ui,sans-serif;background:#0d1117;color:#e6edf3;min-heigh
                width:min(680px,94vw);max-height:85vh;display:flex;flex-direction:column;
                animation:slideUp .25s ease-out;overflow:hidden}
 .modal-header{display:flex;justify-content:space-between;align-items:center;
-              padding:18px 22px;border-bottom:1px solid #30363d;flex-shrink:0}
-.modal-header h2{font-size:18px;font-weight:700;color:#e6edf3}
+              padding:18px 22px;border-bottom:1px solid #30363d;flex-shrink:0;gap:12px}
+.modal-header h2{font-size:18px;font-weight:700;color:#e6edf3;min-width:0;overflow-wrap:break-word}
 .modal-close{background:none;border:none;color:#8b949e;font-size:20px;
-             cursor:pointer;padding:4px 8px;border-radius:6px;line-height:1}
+             cursor:pointer;padding:4px 8px;border-radius:6px;line-height:1;flex-shrink:0}
 .modal-close:hover{color:#e6edf3;background:#21262d}
 .modal-body{overflow-y:auto;padding:22px;flex:1}
 /* Leaderboard */
@@ -138,20 +138,21 @@ body{font-family:system-ui,sans-serif;background:#0d1117;color:#e6edf3;min-heigh
 .lb-group-alive .lb-group-header{background:#0f2d1f;border:1px solid #238636;color:#3fb950}
 .lb-group-eliminated .lb-group-header{background:#21262d;border:1px solid #30363d;color:#8b949e}
 .lb-group-nopicks .lb-group-header{background:#2d1b00;border:1px solid #d29922;color:#d29922}
-.lb-player-row{display:flex;align-items:center;padding:8px 12px;border-bottom:1px solid #21262d;gap:10px}
+/* Weekly standings rows — name shrinks, score and badge never wrap */
+.lb-player-row{display:flex;align-items:center;padding:8px 12px;border-bottom:1px solid #21262d;gap:8px;flex-wrap:nowrap}
 .lb-player-row:last-child{border-bottom:none}
-.lb-player-name{flex:1;font-size:14px;color:#c9d1d9}
-.lb-player-score{font-size:13px;font-weight:600}
-.pending-badge{font-size:11px;padding:2px 8px;border-radius:4px;background:#2d1b00;color:#d29922;border:1px solid #d29922;margin-left:6px}
+.lb-player-name{flex:1;font-size:14px;color:#c9d1d9;min-width:0;overflow-wrap:break-word}
+.lb-player-score{font-size:13px;font-weight:600;white-space:nowrap;flex-shrink:0}
+.pending-badge{font-size:11px;padding:2px 8px;border-radius:4px;background:#2d1b00;color:#d29922;border:1px solid #d29922;white-space:nowrap;flex-shrink:0}
 .winner-crown{font-size:16px;margin-right:4px}
 .season-leader{background:linear-gradient(135deg,#2d2000,#1a1400);border:1px solid #d29922;border-radius:8px;padding:10px 14px;margin-bottom:6px;display:flex;align-items:center;gap:10px}
 .season-striking{background:#0d2d45;border:1px solid #388bfd;border-radius:8px;padding:8px 14px;margin-bottom:4px;display:flex;align-items:center;gap:10px}
 .season-normal{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid #21262d}
 .season-last{background:#2d0f0f;border:1px solid #da3633;border-radius:8px;padding:8px 14px;margin-top:4px;display:flex;align-items:center;gap:10px}
 .season-rank{width:32px;text-align:center;font-weight:700;font-size:14px;color:#8b949e;flex-shrink:0}
-.season-name{flex:1;font-size:14px}
-.season-score{font-size:13px;font-weight:600;color:#3fb950}
-.striking-badge{font-size:11px;padding:2px 8px;border-radius:4px;background:#0d2d45;color:#58a6ff;border:1px solid #388bfd;margin-left:6px}
+.season-name{flex:1;font-size:14px;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:3px}
+.season-score{font-size:13px;font-weight:600;color:#3fb950;white-space:nowrap;flex-shrink:0}
+.striking-badge{font-size:10px;padding:2px 7px;border-radius:4px;background:#0d2d45;color:#58a6ff;border:1px solid #388bfd}
 .season-divider{font-size:11px;color:#484f58;text-align:center;padding:6px 0;border-top:1px dashed #21262d;border-bottom:1px dashed #21262d;margin:6px 0}
 /* Archive */
 .archive-week{padding:12px 0;border-bottom:1px solid #21262d}
@@ -235,11 +236,11 @@ body{font-family:system-ui,sans-serif;background:#0d1117;color:#e6edf3;min-heigh
 /* Game detail modal */
 .gd-section{margin-bottom:20px}
 .gd-section-title{font-size:12px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #21262d}
-.gd-picker{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid #21262d}
+.gd-picker{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid #21262d;gap:8px}
 .gd-picker:last-child{border-bottom:none}
-.gd-picker-name{font-size:14px;cursor:pointer;color:#c9d1d9;transition:color .15s}
+.gd-picker-name{font-size:14px;cursor:pointer;color:#c9d1d9;transition:color .15s;min-width:0;overflow-wrap:break-word}
 .gd-picker-name:hover{color:#58a6ff}
-.gd-result{font-size:12px;font-weight:600;padding:2px 8px;border-radius:4px}
+.gd-result{font-size:12px;font-weight:600;padding:2px 8px;border-radius:4px;white-space:nowrap;flex-shrink:0}
 .gd-correct{background:#0f2d1f;color:#3fb950}
 .gd-wrong{background:#2d0f0f;color:#f85149}
 .gd-pending{background:#21262d;color:#8b949e}
@@ -251,9 +252,9 @@ body{font-family:system-ui,sans-serif;background:#0d1117;color:#e6edf3;min-heigh
 .ps-stat-lbl{font-size:11px;color:#8b949e;margin-top:3px}
 .ps-week{padding:12px 0;border-bottom:1px solid #21262d}
 .ps-week:last-child{border-bottom:none}
-.ps-week-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
-.ps-week-num{font-size:12px;font-weight:700;color:#484f58;text-transform:uppercase;letter-spacing:.5px}
-.ps-week-result{font-size:14px;font-weight:700}
+.ps-week-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;gap:8px}
+.ps-week-num{font-size:12px;font-weight:700;color:#484f58;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+.ps-week-result{font-size:14px;font-weight:700;white-space:nowrap;flex-shrink:0}
 .ps-picks{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
 /* Fun Facts */
 .fact-card{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;margin-bottom:12px}
@@ -1214,10 +1215,10 @@ function renderSeasonStandings(elId, players) {
     var badge=isLeader?'<span class="lb-badge" style="margin-left:8px">LEADER</span>':
       isStriking?'<span class="striking-badge">within striking distance</span>':
       isLast?'<span style="font-size:11px;color:#f85149;margin-left:8px">last place</span>':'';
-    // Season standings may not have playerId — show as plain if missing
     var nameHtml = p.playerId ? playerLink(p) : '<span>'+p.name+'</span>';
+    var badgeEl  = badge ? badge.replace('margin-left:8px;','') : '';
     html+='<div class="'+cls+'"><span class="season-rank">'+rankStr+'</span>'+
-      '<span class="season-name">'+nameHtml+badge+'</span>'+
+      '<span class="season-name">'+nameHtml+(badgeEl?'<span>'+badgeEl+'</span>':'')+'</span>'+
       '<span class="season-score">'+p.correct+' correct · '+pctD+'</span></div>';
   });
   el.innerHTML=html;
