@@ -174,7 +174,7 @@ body{font-family:system-ui,sans-serif;background:#0d1117;color:#e6edf3;min-heigh
 .league-header{font-size:12px;font-weight:700;color:#8b949e;padding:12px 0 6px;text-transform:uppercase;letter-spacing:1px;border-top:1px solid #21262d;margin-top:8px}
 .logout-btn{font-size:12px;color:#8b949e;background:none;border:none;cursor:pointer;padding:0}
 .logout-btn:hover{color:#f85149}
-.header-row{display:flex;justify-content:space-between;align-items:center}
+.header-row{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px}
 .hidden{display:none!important}
 .countdown{font-size:12px;color:#d29922}
 .deadline-banner{border-radius:10px;padding:12px 16px;margin-bottom:16px;text-align:center;font-weight:600;transition:all .5s}
@@ -277,9 +277,9 @@ body{font-family:system-ui,sans-serif;background:#0d1117;color:#e6edf3;min-heigh
 <div class="container">
   <div class="header">
     <div class="header-row">
-      <span style="min-width:60px"></span>
+      <span></span>
       <h1>🏈 TGP Pick'em Pool</h1>
-      <button class="logout-btn hidden" id="logout-btn" onclick="logout()" style="min-width:60px;text-align:right">Sign out</button>
+      <button class="logout-btn hidden" id="logout-btn" onclick="logout()" style="justify-self:end">Sign out</button>
     </div>
     <p id="header-sub">Beat the spread. Win the week.</p>
   </div>
@@ -314,6 +314,9 @@ body{font-family:system-ui,sans-serif;background:#0d1117;color:#e6edf3;min-heigh
         <div id="picks-summary" class="picks-summary hidden">
           <h3>Your picks (<span id="pick-count">0</span>/6)</h3>
           <div class="picks-list" id="picks-list"></div>
+          <div id="picks-swap-hint" class="hidden" style="font-size:11px;color:#484f58;margin-top:8px">
+            💡 To swap a pick, tap your current selection to deselect it, then choose a new one.
+          </div>
         </div>
         <div class="card">
           <h2>Week <span id="week-num"></span> Games</h2>
@@ -562,6 +565,10 @@ function showTab(tab) {
     document.getElementById('view-'+t).classList.toggle('hidden', t!==tab);
     document.getElementById('tab-'+t).classList.toggle('active', t===tab);
   });
+  // Always hide save prompt when leaving picks tab
+  if (tab !== 'picks') {
+    document.getElementById('save-prompt').classList.add('hidden');
+  }
   if (tab==='leaderboard') { loadLeaderboard(); }
   if (tab==='rooting')     { loadRoutingGuide(); }
   if (tab==='facts')       { loadFunFacts(); }
@@ -798,13 +805,11 @@ function loadPicksTab() {
     selectedPicks = res.myPicks.slice();
     renderGames(res);
     if (res.lastScoreUpdate) {
-      var minsAgo = Math.round((Date.now()-res.lastScoreUpdate)/60000);
-      var nextUp  = 60-(minsAgo%60);
-      var infoEl  = document.getElementById('score-update-info');
-      infoEl.textContent = 'Scores last updated: '+(minsAgo<1?'just now':minsAgo+' min ago')+
-        ' · Next update in ~'+nextUp+' min';
-      infoEl.classList.remove('hidden');
-    }
+        var minsAgo = Math.round((Date.now()-res.lastScoreUpdate)/60000);
+        var infoEl  = document.getElementById('score-update-info');
+        infoEl.textContent = 'Scores last updated: '+(minsAgo<1?'just now':minsAgo+' min ago');
+        infoEl.classList.remove('hidden');
+      }
     document.getElementById('picks-content').classList.remove('hidden');
     document.getElementById('export-area').classList.remove('hidden');
     startDeadlineTimer();
@@ -1009,6 +1014,8 @@ function toggleMlsPick(key,btn,game) {
 }
 function updatePicksSummary() {
   var count=selectedPicks.length;
+  var satNoon=serverSaturdayNoon||getThisSaturdayNoon();
+  var locked=Date.now()>=satNoon;
   var summary=document.getElementById('picks-summary');
   var listEl=document.getElementById('picks-list');
   document.getElementById('pick-count').textContent=count;
@@ -1017,9 +1024,15 @@ function updatePicksSummary() {
     var label=p.indexOf('Draw:')===0?'Draw ('+p.split(':')[1]+')':p;
     return '<span class="pick-chip">'+label+getSpreadForPick(p)+'</span>';
   }).join('');
+  // Add swap hint when at 6 picks and not locked
+  var hintEl=document.getElementById('picks-swap-hint');
+  if (hintEl) {
+    hintEl.classList.toggle('hidden', count!==6||locked);
+  }
   var sb=document.getElementById('submit-btn');
   if (sb) { sb.textContent=count===6?'Save All 6 Picks':'Save '+count+' Pick'+(count!==1?'s':''); }
-  document.getElementById('save-prompt').classList.toggle('hidden', count!==6);
+  // Only show floating prompt when at 6 picks AND picks aren't locked
+  document.getElementById('save-prompt').classList.toggle('hidden', count!==6||locked);
 }
 function refreshButtonStates() {
   var atLimit=selectedPicks.length>=6;
@@ -1462,7 +1475,7 @@ function startRgRefresh() {
   rgRefreshTimer=setInterval(function(){ rgCountdown--; if (rgCountdown<=0) { rgCountdown=60; loadRoutingGuide(true); } updateRefreshInfo(); },1000);
 }
 function stopRgRefresh() { if (rgRefreshTimer) { clearInterval(rgRefreshTimer); rgRefreshTimer=null; } }
-function updateRefreshInfo() { var el=document.getElementById('rg-refresh-info'); if (el) { el.textContent='Refreshes in '+rgCountdown+'s'; } }
+function updateRefreshInfo() { var el=document.getElementById('rg-refresh-info'); if (el) { el.textContent='Page data refreshes in '+rgCountdown+'s'; } }
 
 // ── Fun Facts ─────────────────────────────────────────────────
 function loadFunFacts() {
