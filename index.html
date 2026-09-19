@@ -523,7 +523,17 @@ function showApp() {
   document.getElementById('header-sub').textContent = 'Welcome, ' + player.name + '!';
   document.getElementById('picks-loading').classList.remove('hidden');
   document.getElementById('picks-content').classList.add('hidden');
+  // Always load picks data in background (sets serverSaturdayNoon, populates picks tab)
   loadPicksTab();
+  // After Saturday noon, default to Leaderboard instead of Picks
+  var satNoon = getThisSaturdayNoon();
+  if (Date.now() >= satNoon) {
+    ['picks','leaderboard','rooting'].forEach(function(t) {
+      document.getElementById('view-'+t).classList.toggle('hidden', t!=='leaderboard');
+      document.getElementById('tab-'+t).classList.toggle('active', t==='leaderboard');
+    });
+    loadLeaderboard();
+  }
 }
 function logout() {
   sessionStorage.removeItem('tgp_player');
@@ -1265,14 +1275,15 @@ function renderGameCard(g, totalSurvivors) {
     var fillWidth=Math.abs(dotPct-50)+'%', fillLeft=margin>=absSpread?'50%':'auto', fillRight=margin>=absSpread?'auto':'50%';
     var underdogTeam=g.awayTeam===g.favoredTeam?g.homeTeam:g.awayTeam;
     var underdogLast=underdogTeam.split(' ').pop(), favLast=g.favoredTeam.split(' ').pop();
-    gaugeHtml='<div class="sb-gauge-wrap"><div class="sb-gauge-track"><div class="sb-gauge-marker"></div><div class="sb-gauge-fill '+fillCls+'" style="width:'+fillWidth+';left:'+fillLeft+';right:'+fillRight+'"></div><div class="sb-gauge-dot" style="left:'+dotPct+'%"></div></div><div class="sb-gauge-labels"><span>&larr; '+underdogLast+' covering</span><span style="opacity:.45;font-size:10px">at the spread</span><span>'+favLast+' covering &rarr;</span></div></div>';
+    gaugeHtml='<div class="sb-gauge-wrap"><div class="sb-gauge-track"><div class="sb-gauge-marker"></div><div class="sb-gauge-fill '+fillCls+'" style="width:'+fillWidth+';left:'+fillLeft+';right:'+fillRight+'"></div><div class="sb-gauge-dot" style="left:'+dotPct+'%"></div></div><div class="sb-gauge-labels"><span>&larr; '+underdogLast+' covering</span><span style="opacity:.65;font-size:10px;font-weight:700">at the spread</span><span>'+favLast+' covering &rarr;</span></div></div>';
   }
   var bannerHtml='';
   if (isLive&&g.survivorsAtRisk>=1) {
     var pct=totalSurvivors>0?Math.round((g.survivorsAtRisk/totalSurvivors)*100):0;
     var dangerCls=pct>=25?'sb-danger-banner':'sb-upset-banner';
+    var dangerTxtCls=pct>=25?'sb-danger-text':'sb-upset-text';
     var dangerIcon=pct>=25?'&#128128;':'&#9889;';
-    bannerHtml='<div class="'+dangerCls+'"><div class="sb-danger-text">'+dangerIcon+' '+g.survivorsAtRisk+' survivor'+(g.survivorsAtRisk!==1?'s':'')+' in danger if this holds</div>'+(pct>=25?'<div class="sb-danger-sub">'+pct+'% of the field</div>':'')+'</div>';
+    bannerHtml='<div class="'+dangerCls+'"><div class="'+dangerTxtCls+'">'+dangerIcon+' '+g.survivorsAtRisk+' survivor'+(g.survivorsAtRisk!==1?'s':'')+' in danger if this holds</div>'+(pct>=25?'<div class="sb-danger-sub">'+pct+'% of surviving players</div>':'')+'</div>';
   }
   var picksHtml='';
   if (g.isLocked) {
@@ -1281,7 +1292,7 @@ function renderGameCard(g, totalSurvivors) {
       var colClass=draw.length>0?'sb-picks-grid three-col':'sb-picks-grid';
       picksHtml='<div class="sb-picks-wrap"><div class="'+colClass+'">';
       function pickerCol(title, pickers, sLbl) {
-        var ch='<div><div class="sb-col-header"><span style="font-weight:800">'+title+'</span>'+(sLbl?'<span style="font-size:10px;opacity:.6;font-weight:400"> '+sLbl+'</span>':'')+'<span class="sb-col-count">'+pickers.length+'</span></div>';
+        var playerWord=pickers.length===1?'player':'players'; var ch='<div><div style="font-size:11px;font-weight:700;color:#c9d1d9;margin-bottom:8px;">'+title+(sLbl?' <span style="font-weight:400;opacity:.7">'+sLbl+'</span>':'')+' <span style="font-weight:400;color:#484f58">('+pickers.length+' '+playerWord+' picked)</span></div>';
         if (!pickers.length) { return ch+'<div style="font-size:12px;color:#484f58;padding:4px 0">No picks</div></div>'; }
         pickers.forEach(function(p) { playerRegistry[p.playerId]=p.name; var cls=p.isSurvivor?'sb-player-alive':p.isEliminated?'sb-player-elim':'sb-player-nopicks'; ch+='<div class="sb-player-row '+cls+'" onclick="openPlayerStats(\''+p.playerId+'\')" ><div class="sb-player-dot"></div><div class="sb-player-name">'+p.name+'</div></div>'; });
         return ch+'</div>';
