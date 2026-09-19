@@ -1084,20 +1084,29 @@ function renderMyStatus(data) {
       gbt[g.homeTeam]=Object.assign({},info,{spreadStr:homeSpread});
       if (g.gameType==='moneyline') { gbt['Draw:'+g.awayTeam]=Object.assign({},info,{spreadStr:'Draw'}); }
     });
-    snapshot='<div style="margin-top:14px;border-top:1px solid rgba(255,255,255,0.1);padding-top:12px"><div style="font-size:11px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Your Picks This Week</div>';
+    snapshot='<div style="margin-top:14px;border-top:1px solid rgba(255,255,255,0.1);padding-top:12px"><div style="font-size:11px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Your Picks This Week</div>';
     me.picks.forEach(function(pick) {
       var label=pick.indexOf('Draw:')===0?'Draw ('+pick.split(':')[1]+')':pick;
-      var g=gbt[pick], icon='⏳', color='#8b949e', extra='';
-      if (!g) { icon='⏳'; }
+      var g=gbt[pick], icon='⏳', color='#8b949e', detail2='';
+      if (!g) { detail2=''; }
       else if (g.status==='final') {
         var won=pick===g.result||(pick.indexOf('Draw:')===0&&g.result==='Draw');
         icon=won?'✅':'❌'; color=won?'#3fb950':'#f85149';
-        extra=g.awayTeam+' '+g.awayScore+', '+g.homeTeam+' '+g.homeScore+' (Final)';
+        detail2=' · '+g.awayTeam+' '+g.awayScore+' – '+g.homeTeam+' '+g.homeScore+' (Final)';
       } else if (g.status==='in_progress') {
         icon='⏳'; color='#d29922';
-        extra=g.spreadStr+' · Score: '+g.awayScore+'-'+g.homeScore;
-      } else { extra=g.spreadStr+' · '+g.kickStr; }
-      snapshot+='<div style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06)"><span style="font-size:16px;flex-shrink:0">'+icon+'</span><div style="flex:1"><div style="font-size:14px;font-weight:600;color:'+color+'">'+label+'</div>'+(extra?'<div style="font-size:12px;color:#8b949e;margin-top:2px">'+extra+'</div>':'')+'</div></div>';
+        // Show score and who's currently covering
+        var covering=getClientCovering(g,pick);
+        detail2=' · '+g.awayTeam+' '+g.awayScore+' – '+g.homeTeam+' '+g.homeScore+(covering?' · '+covering:'');
+      } else {
+        detail2=' · '+g.kickStr;
+      }
+      snapshot+='<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.06)">'+
+        '<span style="font-size:15px;flex-shrink:0">'+icon+'</span>'+
+        '<span style="font-size:13px;font-weight:600;color:'+color+'">'+label+
+          (g&&g.spreadStr?' <span style="font-weight:400;color:#8b949e">'+g.spreadStr+'</span>':'')+
+          '<span style="font-weight:400;color:#8b949e">'+detail2+'</span></span>'+
+        '</div>';
     });
     snapshot+='</div>';
   }
@@ -1149,123 +1158,139 @@ function loadLiveScoreboard(silent) {
   });
 }
 
+// Client-side covering calculation for My Status
+function getClientCovering(g, myPick) {
+  if (g.gameType==='moneyline') {
+    var away=parseInt(g.awayScore)||0, home=parseInt(g.homeScore)||0;
+    if (away===home) { return null; }
+    var covTeam=away>home?g.awayTeam:g.homeTeam;
+    return covTeam+' covering';
+  }
+  var spread=parseFloat(g.spread);
+  if (isNaN(spread)) { return null; }
+  var isFavAway=g.awayTeam===g.favoredTeam;
+  var favScore=parseInt(isFavAway?g.awayScore:g.homeScore)||0;
+  var dogScore=parseInt(isFavAway?g.homeScore:g.awayScore)||0;
+  var margin=favScore-dogScore;
+  var absSpread=Math.abs(spread);
+  if (margin===absSpread) { return 'Push'; }
+  var covTeam=margin>absSpread?g.favoredTeam:(isFavAway?g.homeTeam:g.awayTeam);
+  return covTeam+' covering';
+}
+
 function renderLiveScoreboard(data) {
   var el=document.getElementById('rg-games'); el.innerHTML='';
   document.getElementById('rg-refresh-info').textContent='Updates in '+sbCountdown+'s';
   if (!data.games||data.games.length===0) {
     el.innerHTML='<div class="sb-empty"><div class="sb-empty-icon">🏈</div><div class="sb-empty-title">No games this week yet</div><div class="sb-empty-sub">Check back when odds are posted Tuesday morning.</div></div>'; return;
   }
-  var lockedGames=data.games.filter(function(g){ return g.isLocked; });
-  var upcomingGames=data.games.filter(function(g){ return !g.isLocked; });
-  if (lockedGames.length===0&&upcomingGames.length>0) {
+
+  var liveGames=data.games.filter(function(g){ return g.status==='in_progress'&&((g.awayPickers||[]).length+(g.homePickers||[]).length+(g.drawPickers||[]).length>0); });
+  // Sort live games by how many people picked them — most-watched first
+  liveGames.sort(function(a,b){
+    var aC=(a.awayPickers||[]).length+(a.homePickers||[]).length+(a.drawPickers||[]).length;
+    var bC=(b.awayPickers||[]).length+(b.homePickers||[]).length+(b.drawPickers||[]).length;
+    return bC-aC;
+  });
+  var pendingGames=data.games.filter(function(g){ return g.status==='scheduled'&&(!g.isLocked||((g.awayPickers||[]).length+(g.homePickers||[]).length+(g.drawPickers||[]).length>0)); });
+  var finalGames=data.games.filter(function(g){ return g.status==='final'&&((g.awayPickers||[]).length+(g.homePickers||[]).length+(g.drawPickers||[]).length>0); });
+  var hasAnyLocked=data.games.some(function(g){ return g.isLocked; });
+
+  // Nudge when nothing is locked yet
+  if (!hasAnyLocked&&pendingGames.length>0) {
     var nudge=document.createElement('div'); nudge.className='sb-upcoming-nudge';
     nudge.innerHTML='<div class="sb-nudge-text">No games have locked yet — picks are still hidden.</div><div style="margin-top:4px;font-size:13px">Check the <span class="sb-nudge-link" onclick="setGameView(\'chaos\')">Chaos Rankings</span> to see which upcoming games will shake up the standings most.</div>';
     el.appendChild(nudge);
   }
-  data.games.forEach(function(g) { el.appendChild(renderGameCard(g, data.totalSurvivors)); });
+
+  function sectionHeader(label) {
+    var div=document.createElement('div');
+    div.style.cssText='font-size:11px;font-weight:700;color:#484f58;text-transform:uppercase;letter-spacing:1px;padding:8px 0 6px;margin-top:4px;border-bottom:1px solid #21262d;margin-bottom:10px';
+    div.textContent=label; return div;
+  }
+
+  if (liveGames.length>0) {
+    el.appendChild(sectionHeader('🔴  Live Now'));
+    liveGames.forEach(function(g){ el.appendChild(renderGameCard(g, data.totalSurvivors)); });
+  }
+  if (pendingGames.length>0) {
+    el.appendChild(sectionHeader('📅  Upcoming'));
+    pendingGames.forEach(function(g){ el.appendChild(renderGameCard(g, data.totalSurvivors)); });
+  }
+  if (finalGames.length>0) {
+    el.appendChild(sectionHeader('✅  Completed'));
+    finalGames.forEach(function(g){ el.appendChild(renderGameCard(g, data.totalSurvivors)); });
+  }
 }
 
 function renderGameCard(g, totalSurvivors) {
   var card=document.createElement('div');
   var isLive=g.status==='in_progress', isFinal=g.status==='final';
   var classList=['scoreboard-card'];
-  if (isLive&&(!g.survivorsAtRisk||g.survivorsAtRisk<Math.ceil(totalSurvivors*0.25))) { classList.push('live-game'); }
+  if (isLive&&g.survivorsAtRisk<Math.ceil(totalSurvivors*0.25)) { classList.push('live-game'); }
   if (isLive&&g.survivorsAtRisk>=Math.ceil(totalSurvivors*0.25)) { classList.push('danger-game'); }
   card.className=classList.join(' ');
-
-  // Header
   var lc='league-'+g.league.toLowerCase();
-  var statusBadge=isLive?'<span class="sb-live-badge">🔴 LIVE</span>':isFinal?'<span class="sb-final-badge">FINAL</span>':'<span class="sb-upcoming-badge">⏰ '+formatCountdown(g.deadline-Date.now())+'</span>';
+  var statusBadge;
+  if (isLive) { statusBadge='<span class="sb-live-badge">\u{1F534} LIVE</span>'; }
+  else if (isFinal) { statusBadge='<span class="sb-final-badge">FINAL</span>'; }
+  else { var kb=new Date(g.kickoff).toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'}); statusBadge='<span class="sb-upcoming-badge">\uD83D\uDCC5 '+kb+'</span>'; }
   var header='<div class="sb-header"><span class="league-badge '+lc+'">'+g.league+'</span>'+statusBadge+'</div>';
-
-  // Spread labels relative to each team
-  var spread=parseFloat(g.spread);
-  var awaySpreadLabel='', homeSpreadLabel='';
-  if (g.gameType!=='moneyline'&&!isNaN(spread)) {
-    awaySpreadLabel=g.awayTeam===g.favoredTeam?''+spread:'+'+Math.abs(spread);
-    homeSpreadLabel=g.homeTeam===g.favoredTeam?''+spread:'+'+Math.abs(spread);
-  } else if (g.gameType==='moneyline') { awaySpreadLabel='ML'; homeSpreadLabel='ML'; }
-
-  // Score display
+  var spread=parseFloat(g.spread), awaySpreadLabel='', homeSpreadLabel='';
+  if (g.gameType!=='moneyline'&&!isNaN(spread)) { awaySpreadLabel=g.awayTeam===g.favoredTeam?''+spread:'+'+Math.abs(spread); homeSpreadLabel=g.homeTeam===g.favoredTeam?''+spread:'+'+Math.abs(spread); }
+  else if (g.gameType==='moneyline') { awaySpreadLabel='ML'; homeSpreadLabel='ML'; }
   var awayScore=isLive||isFinal?'<div class="sb-team-score">'+g.awayScore+'</div>':'';
   var homeScore=isLive||isFinal?'<div class="sb-team-score">'+g.homeScore+'</div>':'';
-  var kickStr=new Date(g.kickoff).toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'});
-
-  // Covering status
   var coveringStr='';
   if (g.covering&&(isLive||isFinal)) {
-    if (g.covering==='Push') { coveringStr='<div class="sb-covering-status sb-covering-push">PUSH</div>'; }
+    if (g.covering==='Push') { coveringStr='<div class="sb-covering-status sb-covering-push">PUSH — right on the spread</div>'; }
     else {
-      var covLabel=g.covering.indexOf('Draw')!==-1?'Draw':g.covering;
-      var covClass=isFinal?'sb-covering-yes':'sb-covering-yes';
-      coveringStr='<div class="sb-covering-status '+covClass+'">'+(isFinal?'✅ '+covLabel+' covered':'⚡ '+covLabel+' covering')+'</div>';
+      var covLabel=g.covering==='Draw'?'Draw':g.covering, cushionDetail='';
+      if (g.gameType!=='moneyline'&&!isNaN(spread)) {
+        var absS=Math.abs(spread), ifa=g.awayTeam===g.favoredTeam;
+        var fsc=parseInt(ifa?g.awayScore:g.homeScore)||0, dsc=parseInt(ifa?g.homeScore:g.awayScore)||0;
+        var mgn=fsc-dsc, cush=Math.abs(mgn-absS);
+        cushionDetail=' <span style="font-weight:400;opacity:.7;font-size:12px">('+cush.toFixed(1)+' '+(mgn>=absS?'above':'below')+' the spread)</span>';
+      }
+      coveringStr='<div class="sb-covering-status sb-covering-yes">'+(isFinal?'&#9989;':'&#9889;')+' '+covLabel+' covering'+cushionDetail+'</div>';
     }
   }
-
-  // Spread gauge (only for spread games when live/final)
   var gaugeHtml='';
   if (g.gameType!=='moneyline'&&!isNaN(spread)&&(isLive||isFinal)&&g.covering&&g.covering!=='Push') {
-    var absSpread=Math.abs(spread);
-    var isFavAway=g.awayTeam===g.favoredTeam;
-    var favScore=isFavAway?parseInt(g.awayScore):parseInt(g.homeScore);
-    var dogScore=isFavAway?parseInt(g.homeScore):parseInt(g.awayScore);
-    var margin=favScore-dogScore;
-    var scale=Math.max(absSpread*2.5,14);
+    var absSpread=Math.abs(spread), isFavAway=g.awayTeam===g.favoredTeam;
+    var favScore=parseInt(isFavAway?g.awayScore:g.homeScore)||0, dogScore=parseInt(isFavAway?g.homeScore:g.awayScore)||0;
+    var margin=favScore-dogScore, scale=Math.max(absSpread*2.5,14);
     var dotPct=Math.min(95,Math.max(5,50+((margin-absSpread)/scale)*50));
     var fillCls=margin>=absSpread?'sb-gauge-fill-fav':'sb-gauge-fill-dog';
     var fillWidth=Math.abs(dotPct-50)+'%', fillLeft=margin>=absSpread?'50%':'auto', fillRight=margin>=absSpread?'auto':'50%';
-    gaugeHtml='<div class="sb-gauge-wrap"><div class="sb-gauge-track"><div class="sb-gauge-marker"></div><div class="sb-gauge-fill '+fillCls+'" style="width:'+fillWidth+';left:'+fillLeft+';right:'+fillRight+'"></div><div class="sb-gauge-dot" style="left:'+dotPct+'%"></div></div><div class="sb-gauge-labels"><span>'+g.favoredTeam.split(' ').pop()+' not covering</span><span>'+g.favoredTeam.split(' ').pop()+' covering</span></div></div>';
+    var underdogTeam=g.awayTeam===g.favoredTeam?g.homeTeam:g.awayTeam;
+    var underdogLast=underdogTeam.split(' ').pop(), favLast=g.favoredTeam.split(' ').pop();
+    gaugeHtml='<div class="sb-gauge-wrap"><div class="sb-gauge-track"><div class="sb-gauge-marker"></div><div class="sb-gauge-fill '+fillCls+'" style="width:'+fillWidth+';left:'+fillLeft+';right:'+fillRight+'"></div><div class="sb-gauge-dot" style="left:'+dotPct+'%"></div></div><div class="sb-gauge-labels"><span>&larr; '+underdogLast+' covering</span><span style="opacity:.45;font-size:10px">at the spread</span><span>'+favLast+' covering &rarr;</span></div></div>';
   }
-
-  // Danger/Upset banners
   var bannerHtml='';
-  if (isLive&&g.survivorsAtRisk>0) {
-    var pct=Math.round((g.survivorsAtRisk/totalSurvivors)*100);
-    if (pct>=25) {
-      var losingTeam=g.covering===g.awayTeam?g.homeTeam:g.covering===g.homeTeam?g.awayTeam:'';
-      bannerHtml='<div class="sb-danger-banner"><div class="sb-danger-text">💀 '+g.survivorsAtRisk+' survivor'+(g.survivorsAtRisk!==1?'s':'')+' eliminated if this holds</div><div class="sb-danger-sub">'+(losingTeam?losingTeam+' pickers are in danger':'')+' ('+pct+'% of field)</div></div>';
-    } else if (g.isUpset&&g.upsetSurvivors>=3) {
-      bannerHtml='<div class="sb-upset-banner"><div class="sb-upset-text">⚡ UPSET ALERT — '+g.upsetSurvivors+' survivor'+(g.upsetSurvivors!==1?'s':'')+' riding this!</div></div>';
-    }
+  if (isLive&&g.survivorsAtRisk>=1) {
+    var pct=totalSurvivors>0?Math.round((g.survivorsAtRisk/totalSurvivors)*100):0;
+    var dangerCls=pct>=25?'sb-danger-banner':'sb-upset-banner';
+    var dangerIcon=pct>=25?'&#128128;':'&#9889;';
+    bannerHtml='<div class="'+dangerCls+'"><div class="sb-danger-text">'+dangerIcon+' '+g.survivorsAtRisk+' survivor'+(g.survivorsAtRisk!==1?'s':'')+' in danger if this holds</div>'+(pct>=25?'<div class="sb-danger-sub">'+pct+'% of the field</div>':'')+'</div>';
   }
-
-  // Pick columns (only if locked)
   var picksHtml='';
   if (g.isLocked) {
     var away=g.awayPickers||[], home=g.homePickers||[], draw=g.drawPickers||[];
-    var awayCount=away.length, homeCount=home.length, drawCount=draw.length;
-    var totalPickers=awayCount+homeCount+drawCount;
-    if (totalPickers>0) {
-      var colClass=drawCount>0?'sb-picks-grid three-col':'sb-picks-grid';
+    if (away.length+home.length+draw.length>0) {
+      var colClass=draw.length>0?'sb-picks-grid three-col':'sb-picks-grid';
       picksHtml='<div class="sb-picks-wrap"><div class="'+colClass+'">';
-      function pickerCol(title, pickers) {
-        var colHtml='<div><div class="sb-col-header"><span>'+title+'</span><span class="sb-col-count">'+pickers.length+'</span></div>';
-        if (pickers.length===0) { return colHtml+'<div style="font-size:12px;color:#484f58">No picks</div></div>'; }
-        pickers.forEach(function(p) {
-          playerRegistry[p.playerId]=p.name;
-          var cls=p.isSurvivor?'sb-player-alive':p.isEliminated?'sb-player-elim':'sb-player-nopicks';
-          colHtml+='<div class="sb-player-row '+cls+'" onclick="openPlayerStats(\''+p.playerId+'\')"><div class="sb-player-dot"></div><div class="sb-player-name">'+p.name+'</div></div>';
-        });
-        return colHtml+'</div>';
+      function pickerCol(title, pickers, sLbl) {
+        var ch='<div><div class="sb-col-header"><span style="font-weight:800">'+title+'</span>'+(sLbl?'<span style="font-size:10px;opacity:.6;font-weight:400"> '+sLbl+'</span>':'')+'<span class="sb-col-count">'+pickers.length+'</span></div>';
+        if (!pickers.length) { return ch+'<div style="font-size:12px;color:#484f58;padding:4px 0">No picks</div></div>'; }
+        pickers.forEach(function(p) { playerRegistry[p.playerId]=p.name; var cls=p.isSurvivor?'sb-player-alive':p.isEliminated?'sb-player-elim':'sb-player-nopicks'; ch+='<div class="sb-player-row '+cls+'" onclick="openPlayerStats(\''+p.playerId+'\')" ><div class="sb-player-dot"></div><div class="sb-player-name">'+p.name+'</div></div>'; });
+        return ch+'</div>';
       }
-      picksHtml+=pickerCol(g.awayTeam, away);
-      picksHtml+=pickerCol(g.homeTeam, home);
-      if (drawCount>0) { picksHtml+=pickerCol('Draw', draw); }
+      picksHtml+=pickerCol(g.awayTeam,away,awaySpreadLabel); picksHtml+=pickerCol(g.homeTeam,home,homeSpreadLabel); if (draw.length) { picksHtml+=pickerCol('Draw',draw,''); }
       picksHtml+='</div></div>';
-    } else if (!isLive&&!isFinal) {
-      picksHtml='<div class="sb-locked-msg">🔒 No one picked this game</div>';
-    }
-  } else {
-    picksHtml='<div class="sb-locked-msg">🔒 Kicks off '+kickStr+' · Picks revealed at kickoff</div>';
-  }
-
-  card.innerHTML=header+
-    '<div class="sb-teams-row">'+
-      '<div class="sb-team"><div class="sb-team-name">'+g.awayTeam+'</div>'+awayScore+'<div class="sb-team-spread">'+awaySpreadLabel+'</div></div>'+
-      '<div class="sb-vs">@</div>'+
-      '<div class="sb-team"><div class="sb-team-name">'+g.homeTeam+'</div>'+homeScore+'<div class="sb-team-spread">'+homeSpreadLabel+'</div></div>'+
-    '</div>'+
-    coveringStr+gaugeHtml+bannerHtml+picksHtml;
+    } else { picksHtml='<div class="sb-locked-msg">No picks submitted for this game</div>'; }
+  } else { picksHtml='<div class="sb-locked-msg">&#128274; Picks hidden until kickoff</div>'; }
+  card.innerHTML=header+'<div class="sb-teams-row"><div class="sb-team"><div class="sb-team-name" style="font-weight:700">'+g.awayTeam+'</div>'+awayScore+'<div class="sb-team-spread">'+awaySpreadLabel+'</div></div><div class="sb-vs">@</div><div class="sb-team"><div class="sb-team-name" style="font-weight:700">'+g.homeTeam+'</div>'+homeScore+'<div class="sb-team-spread">'+homeSpreadLabel+'</div></div></div>'+coveringStr+gaugeHtml+bannerHtml+picksHtml;
   return card;
 }
 
