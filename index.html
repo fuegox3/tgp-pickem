@@ -184,7 +184,9 @@ body{font-family:system-ui,sans-serif;background:#0d1117;color:#e6edf3;min-heigh
 /* Live Scoreboard */
 .scoreboard-card{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:16px;margin-bottom:12px;transition:border-color .3s}
 .scoreboard-card.live-game{border-color:#238636;animation:livePulse 2s ease-in-out infinite}
+.scoreboard-card.warning-game{border-color:#d29922!important;animation:warningPulse 2s ease-in-out infinite}
 .scoreboard-card.danger-game{border-color:#da3633!important;animation:dangerPulse .8s ease-in-out infinite!important}
+@keyframes warningPulse{0%,100%{border-color:#d29922}50%{border-color:#e6a817;box-shadow:0 0 12px rgba(210,153,34,.25)}}
 @keyframes livePulse{0%,100%{border-color:#238636}50%{border-color:#3fb950;box-shadow:0 0 15px rgba(63,185,80,.25)}}
 @keyframes dangerPulse{0%,100%{border-color:#da3633}50%{border-color:#f85149;box-shadow:0 0 15px rgba(248,81,73,.3)}}
 .sb-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
@@ -488,6 +490,7 @@ var playerRegistry     = {};
 var archiveLoaded      = false;
 var factsLoaded        = false;
 var factsOpen          = false;
+var sbFilter           = 'all'; // 'all' or 'mine'
 
 window.onload = function() {
   var saved = sessionStorage.getItem('tgp_player');
@@ -996,7 +999,7 @@ function renderSeasonStandings(elId, players) {
     if (!shownDivider&&!isLeader&&!isStriking&&leaderCorrect>0) { html+='<div class="season-divider">— rest of the field —</div>'; shownDivider=true; }
     var pct=parseFloat(p.pct)||0, pctD=pct<1?(pct*100).toFixed(1)+'%':pct.toFixed(1)+'%';
     var cls=isLeader?'season-leader':isStriking?'season-striking':isLast?'season-last':'season-normal';
-    var rankStr=isLeader?'🥇':p.displayRank===2?'🥈':p.displayRank===3?'🥉':p.displayRank+'.';
+    var rankStr=isLeader?'🥇':p.displayRank+'.';
     var badge=isLeader?'<span class="lb-badge" style="margin-left:8px">LEADER</span>':isStriking?'<span class="striking-badge">striking distance</span>':isLast?'<span style="font-size:11px;color:#f85149;margin-left:8px">last place</span>':'';
     var nameHtml=p.playerId?playerLink(p):'<span>'+p.name+'</span>';
     var badgeEl=badge?'<span>'+badge.replace('margin-left:8px;','')+'</span>':'';
@@ -1104,10 +1107,13 @@ function renderMyStatus(data) {
         icon=won?'✅':'❌'; color=won?'#3fb950':'#f85149';
         detail2=' · '+g.awayTeam+' '+g.awayScore+' – '+g.homeTeam+' '+g.homeScore+' (Final)';
       } else if (g.status==='in_progress') {
-        icon='⏳'; color='#d29922';
-        // Show score and who's currently covering
         var covering=getClientCovering(g,pick);
-        detail2=' · '+g.awayTeam+' '+g.awayScore+' – '+g.homeTeam+' '+g.homeScore+(covering?' · '+covering:'');
+        var myTeamName=pick.indexOf('Draw:')===0?'Draw':pick;
+        var iAmCovering=covering&&(covering.indexOf(myTeamName)!==-1||(pick.indexOf('Draw:')===0&&covering.indexOf('Draw')!==-1));
+        if (covering) { icon=iAmCovering?'✅':'❌'; color=iAmCovering?'#3fb950':'#f85149'; }
+        else { icon='⏳'; color='#d29922'; }
+        var coverLabel=covering?(iAmCovering?'✅ Covering':'❌ Not covering'):'';
+        detail2=' · '+g.awayTeam+' '+g.awayScore+' – '+g.homeTeam+' '+g.homeScore+(coverLabel?' · '+coverLabel:'');
       } else {
         detail2=' · '+g.kickStr;
       }
@@ -1188,6 +1194,17 @@ function getClientCovering(g, myPick) {
   return covTeam+' covering';
 }
 
+function setSbFilter(filter) {
+  sbFilter=filter;
+  if (sbData) { renderLiveScoreboard(sbData); }
+}
+
+function gameIsMine(g) {
+  return selectedPicks.indexOf(g.awayTeam)!==-1||
+         selectedPicks.indexOf(g.homeTeam)!==-1||
+         selectedPicks.indexOf('Draw:'+g.awayTeam)!==-1;
+}
+
 function renderLiveScoreboard(data) {
   var el=document.getElementById('rg-games'); el.innerHTML='';
   document.getElementById('rg-refresh-info').textContent='Updates in '+sbCountdown+'s';
@@ -1195,22 +1212,37 @@ function renderLiveScoreboard(data) {
     el.innerHTML='<div class="sb-empty"><div class="sb-empty-icon">🏈</div><div class="sb-empty-title">No games this week yet</div><div class="sb-empty-sub">Check back when odds are posted Tuesday morning.</div></div>'; return;
   }
 
-  var liveGames=data.games.filter(function(g){ return g.status==='in_progress'&&((g.awayPickers||[]).length+(g.homePickers||[]).length+(g.drawPickers||[]).length>0); });
-  // Sort live games by how many people picked them — most-watched first
+  // Filter toggle
+  var filterBar=document.createElement('div');
+  filterBar.style.cssText='display:flex;gap:6px;margin-bottom:12px';
+  filterBar.innerHTML=
+    '<button class="view-btn '+(sbFilter==='all'?'active':'')+'" onclick="setSbFilter(\'all\')">All Games</button>'+
+    '<button class="view-btn '+(sbFilter==='mine'?'active':'')+'" onclick="setSbFilter(\'mine\')">My Games</button>';
+  el.appendChild(filterBar);
+
+  // Apply filter
+  var games=sbFilter==='mine'?data.games.filter(gameIsMine):data.games;
+
+  var liveGames=games.filter(function(g){ return g.status==='in_progress'&&((g.awayPickers||[]).length+(g.homePickers||[]).length+(g.drawPickers||[]).length>0); });
   liveGames.sort(function(a,b){
     var aC=(a.awayPickers||[]).length+(a.homePickers||[]).length+(a.drawPickers||[]).length;
     var bC=(b.awayPickers||[]).length+(b.homePickers||[]).length+(b.drawPickers||[]).length;
     return bC-aC;
   });
-  var pendingGames=data.games.filter(function(g){ return g.status==='scheduled'&&(!g.isLocked||((g.awayPickers||[]).length+(g.homePickers||[]).length+(g.drawPickers||[]).length>0)); });
-  var finalGames=data.games.filter(function(g){ return g.status==='final'&&((g.awayPickers||[]).length+(g.homePickers||[]).length+(g.drawPickers||[]).length>0); });
-  var hasAnyLocked=data.games.some(function(g){ return g.isLocked; });
+  var pendingGames=games.filter(function(g){ return g.status==='scheduled'&&(!g.isLocked||((g.awayPickers||[]).length+(g.homePickers||[]).length+(g.drawPickers||[]).length>0)); });
+  var finalGames=games.filter(function(g){ return g.status==='final'&&((g.awayPickers||[]).length+(g.homePickers||[]).length+(g.drawPickers||[]).length>0); });
 
-  // Nudge when nothing is locked yet
+  var hasAnyLocked=games.some(function(g){ return g.isLocked; });
   if (!hasAnyLocked&&pendingGames.length>0) {
     var nudge=document.createElement('div'); nudge.className='sb-upcoming-nudge';
     nudge.innerHTML='<div class="sb-nudge-text">No games have locked yet — picks are still hidden.</div><div style="margin-top:4px;font-size:13px">Check the <span class="sb-nudge-link" onclick="setGameView(\'chaos\')">Chaos Rankings</span> to see which upcoming games will shake up the standings most.</div>';
     el.appendChild(nudge);
+  }
+
+  if (sbFilter==='mine'&&liveGames.length===0&&pendingGames.length===0&&finalGames.length===0) {
+    var empty=document.createElement('div'); empty.className='sb-empty';
+    empty.innerHTML='<div class="sb-empty-icon">🎯</div><div class="sb-empty-title">None of your games are up yet</div><div class="sb-empty-sub">Switch to All Games to see the full slate.</div>';
+    el.appendChild(empty); return;
   }
 
   function sectionHeader(label) {
@@ -1219,26 +1251,18 @@ function renderLiveScoreboard(data) {
     div.textContent=label; return div;
   }
 
-  if (liveGames.length>0) {
-    el.appendChild(sectionHeader('🔴  Live Now'));
-    liveGames.forEach(function(g){ el.appendChild(renderGameCard(g, data.totalSurvivors)); });
-  }
-  if (pendingGames.length>0) {
-    el.appendChild(sectionHeader('📅  Upcoming'));
-    pendingGames.forEach(function(g){ el.appendChild(renderGameCard(g, data.totalSurvivors)); });
-  }
-  if (finalGames.length>0) {
-    el.appendChild(sectionHeader('✅  Completed'));
-    finalGames.forEach(function(g){ el.appendChild(renderGameCard(g, data.totalSurvivors)); });
-  }
+  if (liveGames.length>0) { el.appendChild(sectionHeader('🔴  Live Now')); liveGames.forEach(function(g){ el.appendChild(renderGameCard(g, data.totalSurvivors)); }); }
+  if (pendingGames.length>0) { el.appendChild(sectionHeader('📅  Upcoming')); pendingGames.forEach(function(g){ el.appendChild(renderGameCard(g, data.totalSurvivors)); }); }
+  if (finalGames.length>0) { el.appendChild(sectionHeader('✅  Completed')); finalGames.forEach(function(g){ el.appendChild(renderGameCard(g, data.totalSurvivors)); }); }
 }
 
 function renderGameCard(g, totalSurvivors) {
   var card=document.createElement('div');
   var isLive=g.status==='in_progress', isFinal=g.status==='final';
   var classList=['scoreboard-card'];
-  if (isLive&&g.survivorsAtRisk<Math.ceil(totalSurvivors*0.25)) { classList.push('live-game'); }
-  if (isLive&&g.survivorsAtRisk>=Math.ceil(totalSurvivors*0.25)) { classList.push('danger-game'); }
+  if (isLive&&g.survivorsAtRisk===0) { classList.push('live-game'); }
+  else if (isLive&&g.survivorsAtRisk>0&&g.survivorsAtRisk<Math.ceil(totalSurvivors*0.25)) { classList.push('warning-game'); }
+  else if (isLive&&g.survivorsAtRisk>=Math.ceil(totalSurvivors*0.25)) { classList.push('danger-game'); }
   card.className=classList.join(' ');
   var lc='league-'+g.league.toLowerCase();
   var statusBadge;
@@ -1275,7 +1299,7 @@ function renderGameCard(g, totalSurvivors) {
     var fillWidth=Math.abs(dotPct-50)+'%', fillLeft=margin>=absSpread?'50%':'auto', fillRight=margin>=absSpread?'auto':'50%';
     var underdogTeam=g.awayTeam===g.favoredTeam?g.homeTeam:g.awayTeam;
     var underdogLast=underdogTeam.split(' ').pop(), favLast=g.favoredTeam.split(' ').pop();
-    gaugeHtml='<div class="sb-gauge-wrap"><div class="sb-gauge-track"><div class="sb-gauge-marker"></div><div class="sb-gauge-fill '+fillCls+'" style="width:'+fillWidth+';left:'+fillLeft+';right:'+fillRight+'"></div><div class="sb-gauge-dot" style="left:'+dotPct+'%"></div></div><div class="sb-gauge-labels"><span>&larr; '+underdogLast+' covering</span><span style="opacity:.65;font-size:10px;font-weight:700">at the spread</span><span>'+favLast+' covering &rarr;</span></div></div>';
+    gaugeHtml='<div class="sb-gauge-wrap"><div style="text-align:center;font-size:10px;font-weight:700;color:#8b949e;letter-spacing:.5px;margin-bottom:5px">&mdash; AT THE SPREAD &mdash;</div><div class="sb-gauge-track"><div class="sb-gauge-marker"></div><div class="sb-gauge-fill '+fillCls+'" style="width:'+fillWidth+';left:'+fillLeft+';right:'+fillRight+'"></div><div class="sb-gauge-dot" style="left:'+dotPct+'%"></div></div><div class="sb-gauge-labels"><span>&larr; '+underdogLast+' covering</span><span>'+favLast+' covering &rarr;</span></div></div>';
   }
   var bannerHtml='';
   if (isLive&&g.survivorsAtRisk>=1) {
