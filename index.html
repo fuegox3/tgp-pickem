@@ -205,8 +205,8 @@ body{font-family:system-ui,sans-serif;background:#0d1117;color:#e6edf3;min-heigh
 .sb-gauge-wrap{margin:12px 0;position:relative}
 .sb-gauge-track{height:10px;background:#21262d;border-radius:5px;position:relative;margin:0 12px}
 .sb-gauge-fill{position:absolute;top:0;height:100%;border-radius:5px;transition:width .4s}
-.sb-gauge-fill-fav{background:#388bfd;left:50%}
-.sb-gauge-fill-dog{background:#f85149;right:50%}
+.sb-gauge-fill-away{background:#388bfd;right:50%}
+.sb-gauge-fill-home{background:#3fb950;left:50%}
 .sb-gauge-marker{position:absolute;top:-5px;left:50%;transform:translateX(-50%);width:4px;height:20px;background:#e6edf3;border-radius:2px;z-index:2}
 .sb-gauge-dot{position:absolute;top:50%;transform:translate(-50%,-50%);width:20px;height:20px;background:#fff;border-radius:50%;border:3px solid #0d1117;z-index:3;transition:left .4s}
 .sb-gauge-labels{display:flex;justify-content:space-between;font-size:10px;color:#484f58;margin-top:6px;padding:0 4px}
@@ -1292,14 +1292,19 @@ function renderGameCard(g, totalSurvivors) {
   var gaugeHtml='';
   if (g.gameType!=='moneyline'&&!isNaN(spread)&&(isLive||isFinal)&&g.covering&&g.covering!=='Push') {
     var absSpread=Math.abs(spread), isFavAway=g.awayTeam===g.favoredTeam;
-    var favScore=parseInt(isFavAway?g.awayScore:g.homeScore)||0, dogScore=parseInt(isFavAway?g.homeScore:g.awayScore)||0;
-    var margin=favScore-dogScore, scale=Math.max(absSpread*2.5,14);
-    var dotPct=Math.min(95,Math.max(5,50+((margin-absSpread)/scale)*50));
-    var fillCls=margin>=absSpread?'sb-gauge-fill-fav':'sb-gauge-fill-dog';
-    var fillWidth=Math.abs(dotPct-50)+'%', fillLeft=margin>=absSpread?'50%':'auto', fillRight=margin>=absSpread?'auto':'50%';
-    var underdogTeam=g.awayTeam===g.favoredTeam?g.homeTeam:g.awayTeam;
-    var underdogLast=underdogTeam.split(' ').pop(), favLast=g.favoredTeam.split(' ').pop();
-    gaugeHtml='<div class="sb-gauge-wrap"><div style="text-align:center;font-size:10px;font-weight:700;color:#8b949e;letter-spacing:.5px;margin-bottom:5px">&mdash; AT THE SPREAD &mdash;</div><div class="sb-gauge-track"><div class="sb-gauge-marker"></div><div class="sb-gauge-fill '+fillCls+'" style="width:'+fillWidth+';left:'+fillLeft+';right:'+fillRight+'"></div><div class="sb-gauge-dot" style="left:'+dotPct+'%"></div></div><div class="sb-gauge-labels"><span>&larr; '+underdogLast+' covering</span><span>'+favLast+' covering &rarr;</span></div></div>';
+    var awayScore2=parseInt(g.awayScore)||0, homeScore2=parseInt(g.homeScore)||0;
+    // Away margin relative to spread — positive = away over-covering, negative = home covering
+    var awayNeeded=isFavAway?absSpread:-absSpread;
+    var effectiveMargin=(awayScore2-homeScore2)-awayNeeded;
+    var scale=Math.max(absSpread*2.5,14);
+    // dot < 50 = away covering (left), dot > 50 = home covering (right)
+    var dotPct=Math.min(95,Math.max(5,50-(effectiveMargin/scale)*50));
+    var awayCovering=dotPct<50;
+    var fillCls=awayCovering?'sb-gauge-fill-away':'sb-gauge-fill-home';
+    var fillWidth=Math.abs(dotPct-50)+'%';
+    var fillLeft=awayCovering?'auto':'50%', fillRight=awayCovering?'50%':'auto';
+    var awayLast=g.awayTeam.split(' ').pop(), homeLast=g.homeTeam.split(' ').pop();
+    gaugeHtml='<div class="sb-gauge-wrap"><div style="text-align:center;font-size:10px;font-weight:700;color:#8b949e;letter-spacing:.5px;margin-bottom:5px">&mdash; AT THE SPREAD &mdash;</div><div class="sb-gauge-track"><div class="sb-gauge-marker"></div><div class="sb-gauge-fill '+fillCls+'" style="width:'+fillWidth+';left:'+fillLeft+';right:'+fillRight+'"></div><div class="sb-gauge-dot" style="left:'+dotPct+'%"></div></div><div class="sb-gauge-labels"><span>&larr; '+awayLast+' covering</span><span>'+homeLast+' covering &rarr;</span></div></div>';
   }
   var bannerHtml='';
   if (isLive&&g.survivorsAtRisk>=1) {
