@@ -152,12 +152,6 @@ body{font-family:system-ui,sans-serif;background:#0d1117;color:#e6edf3;min-heigh
 .archive-result{font-size:14px;font-weight:700;margin-top:4px}
 .archive-sub{font-size:12px;color:#8b949e;margin-top:2px}
 /* Fun Facts collapsible */
-.facts-collapsible{margin-top:16px;border:1px solid #30363d;border-radius:8px;overflow:hidden}
-.facts-toggle{width:100%;text-align:left;padding:12px 16px;background:#1c2128;border:none;color:#8b949e;font-size:13px;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
-.facts-toggle:hover{background:#21262d}
-.facts-toggle-icon{transition:transform .2s}
-.facts-toggle-icon.open{transform:rotate(180deg)}
-.facts-inner{padding:16px;border-top:1px solid #30363d}
 /* Chaos rankings */
 .chaos-explainer{font-size:12px;color:#8b949e;margin-bottom:16px;line-height:1.6;padding:10px 12px;border-radius:8px;background:#161b22;border:1px solid #21262d}
 .chaos-level-badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;margin-left:8px}
@@ -306,7 +300,43 @@ body{font-family:system-ui,sans-serif;background:#0d1117;color:#e6edf3;min-heigh
 .game-countdown{font-size:11px;margin-top:3px}
 .game-countdown.warn{color:#d29922}
 .game-countdown.urgent{color:#f85149;font-weight:600}
-/* Fact cards */
+/* Stats tab */
+.stats-week-btn{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid #30363d;background:#21262d;color:#8b949e;transition:all .15s}
+.stats-week-btn.active{background:#0d2d45;border-color:#388bfd;color:#58a6ff}
+.stats-week-btn:disabled{opacity:.4;cursor:not-allowed}
+.stats-section{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:18px;margin-bottom:14px}
+.stats-section-title{font-size:12px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px}
+.dist-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.dist-label{font-size:13px;font-weight:700;color:#c9d1d9;width:32px;flex-shrink:0}
+.dist-bar-wrap{flex:1;height:22px;background:#21262d;border-radius:4px;overflow:hidden;position:relative}
+.dist-bar-fill{height:100%;border-radius:4px;transition:width .4s}
+.dist-bar-6{background:linear-gradient(90deg,#d29922,#e6a817)}
+.dist-bar-5{background:#238636}
+.dist-bar-4{background:#1a6f2e}
+.dist-bar-3{background:#388bfd}
+.dist-bar-2{background:#1f4f8f}
+.dist-bar-1{background:#484f58}
+.dist-bar-0{background:#2d0f0f}
+.dist-count{font-size:12px;color:#8b949e;width:90px;flex-shrink:0;text-align:right}
+.cov-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #21262d}
+.cov-row:last-child{border-bottom:none}
+.cov-league{font-size:13px;font-weight:700;width:60px}
+.cov-detail{font-size:13px;color:#8b949e;flex:1;text-align:center}
+.cov-fav{color:#3fb950;font-weight:600}
+.cov-dog{color:#f85149;font-weight:600}
+.team-rank-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #21262d}
+.team-rank-row:last-child{border-bottom:none}
+.team-rank-num{font-size:12px;color:#484f58;width:22px;flex-shrink:0;text-align:right}
+.team-rank-name{flex:1;font-size:13px;font-weight:600;min-width:0}
+.team-rank-spread{font-size:11px;color:#8b949e;margin-left:4px;font-weight:400}
+.team-rank-bar{width:80px;height:6px;background:#21262d;border-radius:3px;overflow:hidden;flex-shrink:0}
+.team-rank-bar-fill{height:100%;border-radius:3px;background:#388bfd}
+.team-rank-count{font-size:12px;color:#8b949e;width:28px;text-align:right;flex-shrink:0}
+.team-rank-result{font-size:11px;font-weight:700;width:80px;text-align:right;flex-shrink:0}
+.result-covered{color:#3fb950}
+.result-not-covered{color:#f85149}
+.result-push{color:#8b949e}
+.result-pending{color:#484f58}
 .fact-card{background:#21262d;border:1px solid #30363d;border-radius:10px;padding:16px;margin-bottom:12px}
 .fact-label{font-size:11px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
 .fact-value{font-size:22px;font-weight:800;color:#e6edf3}
@@ -345,6 +375,7 @@ body{font-family:system-ui,sans-serif;background:#0d1117;color:#e6edf3;min-heigh
       <button class="btn-tab active" id="tab-picks" onclick="showTab('picks')">Make Picks</button>
       <button class="btn-tab" id="tab-leaderboard" onclick="showTab('leaderboard')">Leaderboard</button>
       <button class="btn-tab" id="tab-rooting" onclick="showTab('rooting')">🔥 Rooting Guide</button>
+      <button class="btn-tab" id="tab-stats" onclick="showTab('stats')">📊 Stats</button>
     </div>
 
     <!-- PICKS TAB -->
@@ -363,6 +394,9 @@ body{font-family:system-ui,sans-serif;background:#0d1117;color:#e6edf3;min-heigh
         </div>
         <div class="card">
           <h2>Week <span id="week-num"></span> Games</h2>
+          <input type="text" id="picks-search" placeholder="🔍 Filter by team name..."
+            oninput="filterPicksGames(this.value)"
+            style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid #30363d;background:#0d1117;color:#e6edf3;font-size:14px;margin-bottom:14px">
           <div id="games-list"></div>
         </div>
         <div id="submit-area" class="hidden">
@@ -417,13 +451,6 @@ body{font-family:system-ui,sans-serif;background:#0d1117;color:#e6edf3;min-heigh
             <div id="lb-archive"><div class="spinner">Loading...</div></div>
           </div>
         </div>
-        <!-- Fun Facts collapsible -->
-        <div class="facts-collapsible" id="facts-collapsible">
-          <button class="facts-toggle" onclick="toggleFacts()">
-            <span>📊 Fun Facts</span>
-            <span class="facts-toggle-icon" id="facts-icon">▼</span>
-          </button>
-          <div id="facts-inner" class="facts-inner hidden"></div>
         </div>
       </div>
     </div>
@@ -442,10 +469,7 @@ body{font-family:system-ui,sans-serif;background:#0d1117;color:#e6edf3;min-heigh
               <button class="view-btn" id="vbtn-chaos" onclick="setGameView('chaos')">🔥 Chaos Rankings</button>
             </div>
             <div>
-              <div id="chaos-weight-toggle" class="view-toggle hidden" style="margin-bottom:4px">
-                <button class="view-btn active" id="vbtn-week" onclick="setChaosWeight('week')">This Week</button>
-                <button class="view-btn" id="vbtn-season" onclick="setChaosWeight('season')">Season Impact</button>
-              </div>
+
               <div style="text-align:right"><span class="refresh-info" id="rg-refresh-info"></span></div>
             </div>
           </div>
@@ -457,10 +481,27 @@ body{font-family:system-ui,sans-serif;background:#0d1117;color:#e6edf3;min-heigh
         </div>
       </div>
     </div>
+    <!-- STATS TAB -->
+    <div id="view-stats" class="hidden">
+      <div id="stats-loading" class="spinner">Loading stats...</div>
+      <div id="stats-content" class="hidden">
+        <div class="view-toggle" style="margin-bottom:14px">
+          <button class="view-btn active" id="stats-vbtn-week" onclick="setStatsView('week')">📅 Week View</button>
+          <button class="view-btn" id="stats-vbtn-team" onclick="setStatsView('team')">🏈 Team View</button>
+        </div>
+        <!-- Week view -->
+        <div id="stats-view-week">
+          <div id="stats-week-picker" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px"></div>
+          <div id="stats-body"></div>
+        </div>
+        <!-- Team view -->
+        <div id="stats-view-team" class="hidden">
+          <div id="stats-team-content"></div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
-
-<!-- MODAL -->
 <div id="modal-overlay" class="modal-overlay hidden" onclick="closeModal()">
   <div class="modal-content" onclick="event.stopPropagation()">
     <div class="modal-header">
@@ -488,9 +529,10 @@ var deadlineTimer      = null;
 var serverSaturdayNoon = null;
 var playerRegistry     = {};
 var archiveLoaded      = false;
-var factsLoaded        = false;
-var factsOpen          = false;
 var sbFilter           = 'all'; // 'all' or 'mine'
+var statsWeek          = null;
+var statsView          = 'week'; // 'week' or 'team'
+var teamListData       = null;
 
 window.onload = function() {
   var saved = sessionStorage.getItem('tgp_player');
@@ -531,7 +573,7 @@ function showApp() {
   // After Saturday noon, default to Leaderboard instead of Picks
   var satNoon = getThisSaturdayNoon();
   if (Date.now() >= satNoon) {
-    ['picks','leaderboard','rooting'].forEach(function(t) {
+    ['picks','leaderboard','rooting','stats'].forEach(function(t) {
       document.getElementById('view-'+t).classList.toggle('hidden', t!=='leaderboard');
       document.getElementById('tab-'+t).classList.toggle('active', t==='leaderboard');
     });
@@ -581,12 +623,13 @@ function api(payload, cb, _retry) {
 
 // ── Tabs ──────────────────────────────────────────────────────
 function showTab(tab) {
-  ['picks','leaderboard','rooting'].forEach(function(t) {
+  ['picks','leaderboard','rooting','stats'].forEach(function(t) {
     document.getElementById('view-'+t).classList.toggle('hidden', t!==tab);
     document.getElementById('tab-'+t).classList.toggle('active', t===tab);
   });
   if (tab==='leaderboard') { loadLeaderboard(); }
   if (tab==='rooting')     { loadRoutingGuide(); }
+  if (tab==='stats')       { loadStatsTab(null); }
   if (tab!=='rooting')     { stopRgRefresh(); stopSbRefresh(); }
   if (tab!=='picks')       { stopDeadlineTimer(); document.getElementById('save-prompt').classList.add('hidden'); }
   if (tab==='picks')       { startDeadlineTimer(); }
@@ -597,12 +640,6 @@ function showLbSubtab(tab) {
     document.getElementById('lbsub-'+t).classList.toggle('active', t===tab);
   });
   if (tab==='archive'&&!archiveLoaded) { loadSeasonArchive(); }
-}
-function toggleFacts() {
-  factsOpen = !factsOpen;
-  document.getElementById('facts-inner').classList.toggle('hidden', !factsOpen);
-  document.getElementById('facts-icon').classList.toggle('open', factsOpen);
-  if (factsOpen && !factsLoaded) { loadFunFacts(); }
 }
 
 // ── Modal ─────────────────────────────────────────────────────
@@ -732,6 +769,8 @@ function loadPicksTab() {
     document.getElementById('picks-loading').classList.add('hidden');
     if (!res.success) { showAlert('picks-alert',res.error,'error'); return; }
     weekData=res; serverSaturdayNoon=res.saturdayNoon; selectedPicks=res.myPicks.slice();
+    var ps = document.getElementById('picks-search');
+    if (ps) { ps.value = ''; } // clear search on reload
     renderGames(res);
     if (res.lastScoreUpdate) {
       var minsAgo=Math.round((Date.now()-res.lastScoreUpdate)/60000);
@@ -742,6 +781,27 @@ function loadPicksTab() {
     document.getElementById('picks-content').classList.remove('hidden');
     document.getElementById('export-area').classList.remove('hidden');
     startDeadlineTimer();
+    // Schedule auto-refresh when early-window games kick off
+    // so pick buttons are replaced with locked state at the right moment
+    scheduleEarlyGameRefreshes(res.games);
+  });
+}
+
+// Set a one-shot timer for each upcoming early-window game (Tue-Fri kickoff)
+// so the picks tab automatically re-renders when that game locks at kickoff
+var earlyGameTimers = [];
+function scheduleEarlyGameRefreshes(games) {
+  earlyGameTimers.forEach(function(t){ clearTimeout(t); });
+  earlyGameTimers = [];
+  var now = Date.now();
+  (games||[]).forEach(function(g) {
+    // Use the deadline the server returned — for early games this equals kickoff
+    var msUntilLock = g.deadline - now;
+    if (msUntilLock > 0 && msUntilLock < 7 * 24 * 60 * 60 * 1000 &&
+        g.deadline !== (serverSaturdayNoon||getThisSaturdayNoon())) {
+      var t = setTimeout(function() { loadPicksTab(); }, msUntilLock + 2000);
+      earlyGameTimers.push(t);
+    }
   });
 }
 
@@ -983,8 +1043,8 @@ function renderWeeklyGrouped(elId, players) {
   el.innerHTML=html;
 }
 function playerRowHtml(p, color, isWinner) {
-  var score=isWinner?'🏆 Perfect week!':p.correct+'/'+(p.graded+p.pending)+' correct';
-  var pend=p.pending>0?'<span class="pending-badge">⏳ '+p.pending+' game'+(p.pending!==1?'s':'')+' pending</span>':'';
+  var score=isWinner?'🏆 Perfect week!':p.correct+' correct'+(p.pending>0?', '+p.pending+' pending':'');
+  var pend='';
   return '<div class="lb-player-row"><span class="lb-player-name">'+playerLink(p)+'</span><span class="lb-player-score" style="color:'+color+'">'+score+'</span>'+pend+'</div>';
 }
 function renderSeasonStandings(elId, players) {
@@ -1013,38 +1073,23 @@ function loadSeasonArchive() {
   archiveLoaded=true; var el=document.getElementById('lb-archive');
   api({ action:'getSeasonArchive', playerId:player.playerId }, function(res) {
     if (!res.success||!res.archive||res.archive.length===0) { el.innerHTML='<p style="color:#8b949e;font-size:14px">No completed weeks yet.</p>'; return; }
-    var html=''; res.archive.forEach(function(wk) {
+    var html='<p class="tap-hint" style="margin-bottom:12px">Tap any week to see full stats</p>';
+    res.archive.forEach(function(wk) {
       var resultStr='', resultColor='';
       if (wk.isCarryover) { resultStr='💰 Carryover — nobody won'; resultColor='#58a6ff'; }
       else if (wk.winners.length===1) { resultStr='🏆 '+wk.winners[0]+' won it'; resultColor='#d29922'; }
       else { resultStr='🏆 '+wk.winners.join(' & ')+' tied'; resultColor='#d29922'; }
-      html+='<div class="archive-week"><div class="archive-week-num">Week '+wk.week+'</div><div class="archive-result" style="color:'+resultColor+'">'+resultStr+'</div><div class="archive-sub">'+wk.submitted+' players submitted picks</div></div>';
+      html+='<div class="archive-week" onclick="openWeekStats('+wk.week+')" style="cursor:pointer;border-radius:6px;padding:10px 8px;transition:background .15s" onmouseover="this.style.background=\'#1c2128\'" onmouseout="this.style.background=\'\'">'+
+        '<div class="archive-week-num">Week '+wk.week+'</div>'+
+        '<div class="archive-result" style="color:'+resultColor+'">'+resultStr+'</div>'+
+        '<div class="archive-sub">'+wk.submitted+' players submitted picks · <span style="color:#388bfd;font-size:11px">View stats →</span></div>'+
+        '</div>';
     });
     el.innerHTML=html;
   });
 }
 
 // ── Fun Facts (collapsible) ───────────────────────────────────
-function loadFunFacts() {
-  var el=document.getElementById('facts-inner'); el.innerHTML='<div class="spinner">Crunching numbers...</div>';
-  api({ action:'getFunFacts', playerId:player.playerId }, function(res) {
-    if (!res.success) { el.innerHTML=res.notYet?'<p style="color:#8b949e;font-size:13px;padding:12px 0">Fun Facts unlock at Saturday noon.</p>':'<p style="color:#f85149">Could not load.</p>'; factsLoaded=true; return; }
-    el.innerHTML=buildFactsHtml(res); factsLoaded=true;
-  });
-}
-function buildFactsHtml(d) {
-  var html='<div class="fact-grid"><div class="fact-card"><div class="fact-label">Perfect so far 🏆</div><div class="fact-value">'+d.perfectSoFar+'</div><div class="fact-sub">player'+(d.perfectSoFar!==1?'s':'')+' still 6/6</div></div>';
-  if (d.mostPicked) { html+='<div class="fact-card"><div class="fact-label">Most popular pick</div><div class="fact-value" style="font-size:16px">'+d.mostPicked.name+'</div><div class="fact-sub">'+d.mostPicked.count+' players</div></div>'; }
-  if (d.leastPicked) { html+='<div class="fact-card"><div class="fact-label">Most contrarian pick</div><div class="fact-value" style="font-size:16px">'+d.leastPicked.name+'</div><div class="fact-sub">Only '+d.leastPicked.count+' player'+(d.leastPicked.count!==1?'s':'')+' picked them</div></div>'; }
-  html+='<div class="fact-card"><div class="fact-label">Total picks</div><div class="fact-value">'+d.totalPicks+'</div></div></div>';
-  html+='<div style="font-size:13px;color:#8b949e;margin-bottom:8px">Favorites vs underdogs (spread games): <strong style="color:#e6edf3">'+d.favPct+'%</strong> took the favorite</div>';
-  if (d.teamArr&&d.teamArr.length>0) {
-    var max=d.teamArr[0].count||1;
-    html+='<div style="font-size:12px;font-weight:700;color:#8b949e;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Most Picked Teams</div>';
-    d.teamArr.forEach(function(t,i){ var pct=Math.round((t.count/max)*100); html+='<div class="bar-row"><div class="bar-label" style="font-size:12px;width:120px">'+(i+1)+'. '+t.name+'</div><div class="bar-track"><div class="bar-fill" style="width:'+pct+'%;background:#d29922"></div></div><div class="bar-pct">'+t.count+'</div></div>'; });
-  }
-  return html;
-}
 
 // ── Rooting Guide ─────────────────────────────────────────────
 function loadRoutingGuide(silent) {
@@ -1138,7 +1183,7 @@ function setGameView(view) {
   rgView=view;
   document.getElementById('vbtn-scoreboard').classList.toggle('active',view==='scoreboard');
   document.getElementById('vbtn-chaos').classList.toggle('active',view==='chaos');
-  document.getElementById('chaos-weight-toggle').classList.toggle('hidden',view!=='chaos');
+
   document.getElementById('chaos-explainer').classList.toggle('hidden',view!=='chaos');
   if (view==='scoreboard') {
     stopRgRefresh();
@@ -1391,6 +1436,271 @@ function renderGamesView(data) {
     div.onclick=(function(gid){ return function(){ openGameDetail(gid); }; })(g.gameId);
     div.innerHTML='<div class="chaos-header"><div><div class="chaos-teams"><span class="league-badge '+lc+'">'+g.league+'</span> '+g.awayTeam+' @ '+g.homeTeam+'<span class="chaos-level-badge '+chaosClass+'">'+chaosLevel+'</span></div><div class="chaos-spread">'+spreadStr+'</div>'+(g.status==='final'?'':'<div class="chaos-pickers">'+fire+' '+c.total+' of '+(rgData?rgData.totalPlayers:'?')+' players picked this game</div>')+'</div></div><div class="chaos-bar"><div class="chaos-bar-away" style="width:'+awayPct+'%"></div><div class="chaos-bar-draw" style="width:'+drawPct+'%"></div><div class="chaos-bar-home" style="width:'+homePct+'%"></div></div><div class="chaos-labels">'+distLabels+'</div><div style="margin-top:6px">'+resultHtml+'</div>';
     el.appendChild(div);
+  });
+}
+
+// ── Picks search filter ───────────────────────────────────────
+function filterPicksGames(term) {
+  term = (term || '').toLowerCase().trim();
+  var rows    = document.querySelectorAll('#games-list .game-row');
+  var headers = document.querySelectorAll('#games-list .league-header');
+  rows.forEach(function(row) {
+    var el    = row.querySelector('.game-teams');
+    var match = !term || (el && el.textContent.toLowerCase().indexOf(term) !== -1);
+    row.style.display = match ? '' : 'none';
+  });
+  headers.forEach(function(hdr) {
+    var next = hdr.nextElementSibling, hasVisible = false;
+    while (next && next.classList.contains('game-row')) {
+      if (next.style.display !== 'none') { hasVisible = true; break; }
+      next = next.nextElementSibling;
+    }
+    hdr.style.display = hasVisible ? '' : 'none';
+  });
+}
+
+// ── Stats Tab ─────────────────────────────────────────────────
+function loadStatsTab(week) {
+  document.getElementById('stats-loading').classList.remove('hidden');
+  document.getElementById('stats-content').classList.add('hidden');
+  var payload = { action:'getWeekStats', playerId:player.playerId };
+  if (week) { payload.week = week; }
+  api(payload, function(res) {
+    document.getElementById('stats-loading').classList.add('hidden');
+    if (!res.success && res.locked) {
+      // Current week locked — show previous week picker + locked message
+      renderStatsWeekPicker(res.availableWeeks, res.currentWeek);
+      document.getElementById('stats-body').innerHTML =
+        '<div class="stats-section" style="text-align:center;padding:32px">' +
+        '<div style="font-size:36px;margin-bottom:12px">🔒</div>' +
+        '<div style="font-size:14px;font-weight:600;color:#c9d1d9;margin-bottom:6px">Current week stats unlock at Saturday noon</div>' +
+        '<div style="font-size:13px;color:#8b949e">Select a past week above to view its results.</div>' +
+        '</div>';
+      document.getElementById('stats-content').classList.remove('hidden');
+      return;
+    }
+    if (!res.success) {
+      document.getElementById('stats-body').innerHTML =
+        '<p style="color:#f85149">Could not load stats.</p>';
+      document.getElementById('stats-content').classList.remove('hidden');
+      return;
+    }
+    statsWeek = res.week;
+    renderStatsWeekPicker(res.availableWeeks, res.week);
+    document.getElementById('stats-body').innerHTML =
+      renderStatsContent(res);
+    document.getElementById('stats-content').classList.remove('hidden');
+  });
+}
+
+function setStatsView(view) {
+  statsView = view;
+  document.getElementById('stats-vbtn-week').classList.toggle('active', view==='week');
+  document.getElementById('stats-vbtn-team').classList.toggle('active', view==='team');
+  document.getElementById('stats-view-week').classList.toggle('hidden', view!=='week');
+  document.getElementById('stats-view-team').classList.toggle('hidden', view!=='team');
+  if (view==='team' && !teamListData) { loadTeamList(); }
+}
+
+function loadTeamList() {
+  document.getElementById('stats-team-content').innerHTML = '<div class="spinner">Loading teams...</div>';
+  api({ action:'getTeamStats', playerId:player.playerId }, function(res) {
+    if (!res.success) {
+      document.getElementById('stats-team-content').innerHTML = '<p style="color:#f85149">Could not load team list.</p>';
+      return;
+    }
+    teamListData = res.teamList;
+    renderTeamSelector('');
+  });
+}
+
+function renderTeamSelector(filter) {
+  var el = document.getElementById('stats-team-content');
+  filter = (filter === undefined ? '' : filter).toLowerCase();
+  var leagueOrder = ['NFL','NCAAF','MLB','NBA','NHL','MLS'];
+  var html = '<input type="text" id="team-search-input" placeholder="🔍 Type a team name..." ' +
+    'oninput="renderTeamSelector(this.value)" ' +
+    'style="width:100%;padding:9px 12px;border-radius:8px;border:1px solid #30363d;background:#0d1117;color:#e6edf3;font-size:14px;margin-bottom:14px">';
+  var hasResults = false;
+  leagueOrder.forEach(function(league) {
+    var teams = ((teamListData && teamListData[league]) || []).filter(function(t) {
+      return !filter || t.team.toLowerCase().indexOf(filter) !== -1;
+    });
+    if (!teams.length) { return; }
+    hasResults = true;
+    html += '<div style="font-size:11px;font-weight:700;color:#8b949e;text-transform:uppercase;letter-spacing:.5px;margin:12px 0 6px">' + league + '</div>';
+    html += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px">';
+    teams.forEach(function(t) {
+      html += '<span class="view-btn" onclick="loadTeamStats(\'' + t.team.replace(/\\/g,'\\\\').replace(/'/g,"\\'") + '\')" style="cursor:pointer">' +
+        t.team + ' <span style="opacity:.5;font-size:10px">(' + t.totalPicks + ' picks)</span></span>';
+    });
+    html += '</div>';
+  });
+  if (!hasResults) {
+    html += '<p style="color:#8b949e;font-size:14px;margin-top:8px">No teams found matching "' + filter + '"</p>';
+  }
+  el.innerHTML = html;
+  var inp = document.getElementById('team-search-input');
+  if (inp && filter) { inp.value = filter; inp.focus(); inp.setSelectionRange(filter.length, filter.length); }
+}
+
+function loadTeamStats(team) {
+  document.getElementById('stats-team-content').innerHTML = '<div class="spinner">Loading ' + team + '...</div>';
+  api({ action:'getTeamStats', playerId:player.playerId, team:team }, function(res) {
+    if (!res.success) {
+      document.getElementById('stats-team-content').innerHTML =
+        '<div><button onclick="renderTeamSelector(\'\')" style="background:none;border:none;color:#58a6ff;cursor:pointer;font-size:13px;margin-bottom:12px">← Back to teams</button>' +
+        '<p style="color:#f85149">' + (res.error || 'Could not load stats.') + '</p></div>';
+      return;
+    }
+    renderTeamStats(res);
+  });
+}
+
+function renderTeamStats(data) {
+  var el = document.getElementById('stats-team-content');
+  var s  = data.summary;
+  var html = '<button onclick="renderTeamSelector(\'\')" style="background:none;border:none;color:#58a6ff;cursor:pointer;font-size:13px;margin-bottom:14px">← Back to teams</button>';
+  html += '<div class="stats-section">';
+  html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">' +
+    '<span class="league-badge league-' + (data.league||'').toLowerCase() + '">' + (data.league||'') + '</span>' +
+    '<span style="font-size:18px;font-weight:800;color:#e6edf3">' + data.team + '</span></div>';
+  html += '<div class="ps-summary" style="margin-bottom:16px">' +
+    statPill('Games', s.games) + statPill('Total Picks', s.totalPicks) +
+    statPill('Covered', s.covered, '#3fb950') + statPill('Did Not Cover', s.notCovered, '#f85149') +
+    '</div>';
+  html += '<div class="stats-section-title" style="margin-bottom:10px">Week by week</div>';
+  (data.weekHistory || []).forEach(function(w) {
+    var rStr='⏳ Pending', rCls='result-pending';
+    if (w.covered==='yes')  { rStr='✅ Covered';        rCls='result-covered'; }
+    if (w.covered==='no')   { rStr='❌ Did not cover';  rCls='result-not-covered'; }
+    if (w.covered==='push') { rStr='— Push';            rCls='result-push'; }
+    html += '<div class="team-rank-row">' +
+      '<div style="width:44px;font-size:12px;color:#484f58;flex-shrink:0">Wk ' + w.week + '</div>' +
+      '<div style="flex:1;font-size:13px;min-width:0">vs ' + w.opponent +
+        (w.spread ? ' <span style="color:#8b949e;font-size:11px">' + w.spread + '</span>' : '') +
+      '</div>' +
+      '<div style="font-size:12px;color:#8b949e;width:60px;text-align:center;flex-shrink:0">' + w.pickCount + ' picks</div>' +
+      '<div class="team-rank-result ' + rCls + '">' + rStr + '</div>' +
+      '</div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function statPill(label, value, color) {
+  return '<div class="ps-stat"><div class="ps-stat-val"' + (color?'style="color:'+color+'"':'') + '>' + value + '</div><div class="ps-stat-lbl">' + label + '</div></div>';
+}
+
+function renderStatsWeekPicker(availableWeeks, activeWeek) {
+  var el = document.getElementById('stats-week-picker');
+  if (!availableWeeks || availableWeeks.length === 0) { el.innerHTML = ''; return; }
+  el.innerHTML = availableWeeks.map(function(w) {
+    var isActive = w.week === activeWeek;
+    var cls = 'stats-week-btn' + (isActive ? ' active' : '');
+    var disabled = !w.available ? ' disabled title="Unlocks at Saturday noon"' : '';
+    return '<button class="' + cls + '"' + disabled +
+      ' onclick="loadStatsTab(' + w.week + ')">Week ' + w.week +
+      (w.isCurrent ? ' 🔴' : '') + '</button>';
+  }).join('');
+}
+
+function renderStatsContent(data) {
+  var html = '<div style="font-size:18px;font-weight:800;color:#e6edf3;margin-bottom:16px">Week ' +
+    data.week + ' Stats</div>';
+
+  // ── Distribution ───────────────────────────────────────────
+  html += '<div class="stats-section">' +
+    '<div class="stats-section-title">How did everyone do?</div>';
+
+  var maxCount = Math.max.apply(null, [6,5,4,3,2,1,0].map(function(n) {
+    return data.distribution[n] || 0;
+  })) || 1;
+
+  var barColors = ['dist-bar-6','dist-bar-5','dist-bar-4','dist-bar-3','dist-bar-2','dist-bar-1','dist-bar-0'];
+  [6,5,4,3,2,1,0].forEach(function(n, idx) {
+    var count = data.distribution[n] || 0;
+    if (count === 0 && n < 6) { return; } // skip empty rows except perfect
+    var pct = Math.round((count / data.totalSubmitted) * 100) || 0;
+    var barWidth = Math.round((count / maxCount) * 100);
+    html += '<div class="dist-row">' +
+      '<div class="dist-label">' + n + '/6</div>' +
+      '<div class="dist-bar-wrap">' +
+        '<div class="dist-bar-fill ' + barColors[6-n] + '" style="width:' + barWidth + '%"></div>' +
+      '</div>' +
+      '<div class="dist-count">' + count + ' player' + (count !== 1 ? 's' : '') +
+        (data.totalSubmitted > 0 ? ' (' + pct + '%)' : '') + '</div>' +
+      '</div>';
+  });
+  html += '<div style="font-size:11px;color:#484f58;margin-top:8px">' +
+    data.totalSubmitted + ' players submitted 6 picks</div>';
+  html += '</div>';
+
+  // ── Coverage breakdown ─────────────────────────────────────
+  var leagueOrder = ['NFL','NCAAF','MLB','NBA','NHL','MLS'];
+  var covLeagues = leagueOrder.filter(function(l) {
+    return data.coverage[l] && data.coverage[l].total > 0;
+  });
+
+  if (covLeagues.length > 0) {
+    html += '<div class="stats-section">' +
+      '<div class="stats-section-title">Favorites vs Underdogs</div>';
+    covLeagues.forEach(function(league) {
+      var c = data.coverage[league];
+      var favPct = c.total > 0 ? Math.round((c.favsCovered / c.total) * 100) : 0;
+      var dogPct = c.total > 0 ? Math.round((c.dogsCovered / c.total) * 100) : 0;
+      html += '<div class="cov-row">' +
+        '<div class="cov-league"><span class="league-badge league-' + league.toLowerCase() + '">' + league + '</span></div>' +
+        '<div class="cov-detail">' +
+          '<span class="cov-fav">' + c.favsCovered + ' fav' + (c.favsCovered !== 1 ? 's' : '') + ' covered</span>' +
+          ' &nbsp;·&nbsp; ' +
+          '<span class="cov-dog">' + c.dogsCovered + ' dog' + (c.dogsCovered !== 1 ? 's' : '') + ' covered</span>' +
+          (c.pushes > 0 ? ' &nbsp;·&nbsp; ' + c.pushes + ' push' : '') +
+        '</div>' +
+        '<div style="font-size:11px;color:#484f58">' + c.total + ' games</div>' +
+        '</div>';
+    });
+    html += '</div>';
+  }
+
+  // ── Team pick rankings ─────────────────────────────────────
+  if (data.teamRankings && data.teamRankings.length > 0) {
+    html += '<div class="stats-section">' +
+      '<div class="stats-section-title">Popular picks this week</div>';
+    var maxPicks = data.teamRankings[0].count || 1;
+    data.teamRankings.forEach(function(t, idx) {
+      var barWidth = Math.round((t.count / maxPicks) * 100);
+      var resultStr = '', resultCls = 'result-pending';
+      if (t.covered === 'yes') { resultStr = '✅ Covered'; resultCls = 'result-covered'; }
+      else if (t.covered === 'no') { resultStr = '❌ Did not cover'; resultCls = 'result-not-covered'; }
+      else if (t.covered === 'push') { resultStr = '— Push'; resultCls = 'result-push'; }
+      else { resultStr = '⏳ Pending'; resultCls = 'result-pending'; }
+      html += '<div class="team-rank-row">' +
+        '<div class="team-rank-num">' + (idx + 1) + '</div>' +
+        '<div class="team-rank-name">' + t.team +
+          (t.spreadDisp ? '<span class="team-rank-spread">' + t.spreadDisp + '</span>' : '') +
+        '</div>' +
+        '<div class="team-rank-bar"><div class="team-rank-bar-fill" style="width:' + barWidth + '%"></div></div>' +
+        '<div class="team-rank-count">' + t.count + '</div>' +
+        '<div class="team-rank-result ' + resultCls + '">' + resultStr + '</div>' +
+        '</div>';
+    });
+    html += '</div>';
+  }
+
+  return html;
+}
+
+// Open stats for a specific past week in a modal (used by Season Archive)
+function openWeekStats(week) {
+  openModal('Week ' + week + ' Stats', '<div class="spinner">Loading...</div>');
+  api({ action:'getWeekStats', playerId:player.playerId, week:week }, function(res) {
+    if (!res.success) {
+      document.getElementById('modal-body').innerHTML =
+        '<p style="color:#f85149">Could not load stats for Week ' + week + '.</p>';
+      return;
+    }
+    document.getElementById('modal-body').innerHTML = renderStatsContent(res);
   });
 }
 
