@@ -1572,16 +1572,38 @@ function renderTeamStats(data) {
   html += '<div class="stats-section-title" style="margin-bottom:10px">Week by week</div>';
   (data.weekHistory || []).forEach(function(w) {
     var rStr='⏳ Pending', rCls='result-pending';
-    if (w.covered==='yes')  { rStr='✅ Covered';        rCls='result-covered'; }
-    if (w.covered==='no')   { rStr='❌ Did not cover';  rCls='result-not-covered'; }
-    if (w.covered==='push') { rStr='— Push';            rCls='result-push'; }
-    html += '<div class="team-rank-row">' +
-      '<div style="width:44px;font-size:12px;color:#484f58;flex-shrink:0">Wk ' + w.week + '</div>' +
-      '<div style="flex:1;font-size:13px;min-width:0">vs ' + w.opponent +
-        (w.spread ? ' <span style="color:#8b949e;font-size:11px">' + w.spread + '</span>' : '') +
+    if (w.covered==='yes')  { rStr='✅ Covered';       rCls='result-covered'; }
+    if (w.covered==='no')   { rStr='❌ Did not cover'; rCls='result-not-covered'; }
+    if (w.covered==='push') { rStr='— Push';           rCls='result-push'; }
+
+    // Spread label: "Browns +8.5 (Dog)" or "Browns -3.5 (Fav)"
+    var spreadLabel = '';
+    if (w.spread && w.spread !== 'ML') {
+      spreadLabel = data.team + ' ' + w.spread + ' (' + (w.isFav ? 'Fav' : 'Dog') + ')';
+    } else if (w.spread === 'ML') {
+      spreadLabel = 'Moneyline';
+    }
+
+    // Final score
+    var scoreLabel = '';
+    if (w.status === 'final' && w.teamScore !== '' && w.oppScore !== '') {
+      scoreLabel = data.team + ' ' + w.teamScore + ' · ' + w.opponent + ' ' + w.oppScore + ' (Final)';
+    } else if (w.status === 'in_progress' && w.teamScore !== '') {
+      scoreLabel = data.team + ' ' + w.teamScore + ' · ' + w.opponent + ' ' + w.oppScore + ' (Live)';
+    }
+
+    var subtext = [spreadLabel, scoreLabel].filter(Boolean).join(' &nbsp;·&nbsp; ');
+    var pickStr = w.pickCount === 0 ? '<span style="color:#484f58">No picks</span>'
+      : w.pickCount + ' pick' + (w.pickCount !== 1 ? 's' : '');
+
+    html += '<div style="padding:10px 0;border-bottom:1px solid #21262d">' +
+      '<div style="display:flex;align-items:center;gap:10px">' +
+        '<div style="width:44px;font-size:12px;color:#484f58;flex-shrink:0">Wk ' + w.week + '</div>' +
+        '<div style="flex:1;font-size:13px;font-weight:600;min-width:0">vs ' + w.opponent + '</div>' +
+        '<div style="font-size:12px;color:#8b949e;flex-shrink:0">' + pickStr + '</div>' +
+        '<div class="team-rank-result ' + rCls + '" style="width:100px;text-align:right">' + rStr + '</div>' +
       '</div>' +
-      '<div style="font-size:12px;color:#8b949e;width:60px;text-align:center;flex-shrink:0">' + w.pickCount + ' picks</div>' +
-      '<div class="team-rank-result ' + rCls + '">' + rStr + '</div>' +
+      (subtext ? '<div style="font-size:11px;color:#8b949e;margin-top:3px;padding-left:54px">' + subtext + '</div>' : '') +
       '</div>';
   });
   html += '</div>';
@@ -1620,7 +1642,8 @@ function renderStatsContent(data) {
   var barColors = ['dist-bar-6','dist-bar-5','dist-bar-4','dist-bar-3','dist-bar-2','dist-bar-1','dist-bar-0'];
   [6,5,4,3,2,1,0].forEach(function(n, idx) {
     var count = data.distribution[n] || 0;
-    if (count === 0 && n < 6) { return; } // skip empty rows except perfect
+    // Always show 6/6 and 0/6; skip middle rows if empty
+    if (count === 0 && n > 0 && n < 6) { return; }
     var pct = Math.round((count / data.totalSubmitted) * 100) || 0;
     var barWidth = Math.round((count / maxCount) * 100);
     html += '<div class="dist-row">' +
