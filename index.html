@@ -1268,7 +1268,7 @@ function renderLiveScoreboard(data) {
   // Apply filter
   var games=sbFilter==='mine'?data.games.filter(gameIsMine):data.games;
 
-  var liveGames=games.filter(function(g){ return g.status==='in_progress'&&((g.awayPickers||[]).length+(g.homePickers||[]).length+(g.drawPickers||[]).length>0); });
+  var liveGames=games.filter(function(g){ return g.status==='in_progress'; }); // always show live games
   liveGames.sort(function(a,b){
     var aC=(a.awayPickers||[]).length+(a.homePickers||[]).length+(a.drawPickers||[]).length;
     var bC=(b.awayPickers||[]).length+(b.homePickers||[]).length+(b.drawPickers||[]).length;
@@ -1373,7 +1373,7 @@ function renderGameCard(g, totalSurvivors) {
       }
       picksHtml+=pickerCol(g.awayTeam,away,awaySpreadLabel); picksHtml+=pickerCol(g.homeTeam,home,homeSpreadLabel); if (draw.length) { picksHtml+=pickerCol('Draw',draw,''); }
       picksHtml+='</div></div>';
-    } else { picksHtml='<div class="sb-locked-msg">No picks submitted for this game</div>'; }
+    } else { picksHtml='<div class="sb-locked-msg" style="color:#484f58">Nobody in the pool picked this game — watch anyway 👀</div>'; }
   } else { picksHtml='<div class="sb-locked-msg">&#128274; Picks hidden until kickoff</div>'; }
   card.innerHTML=header+'<div class="sb-teams-row"><div class="sb-team"><div class="sb-team-name" style="font-weight:700">'+g.awayTeam+'</div>'+awayScore+'<div class="sb-team-spread">'+awaySpreadLabel+'</div></div><div class="sb-vs">@</div><div class="sb-team"><div class="sb-team-name" style="font-weight:700">'+g.homeTeam+'</div>'+homeScore+'<div class="sb-team-spread">'+homeSpreadLabel+'</div></div></div>'+coveringStr+gaugeHtml+bannerHtml+picksHtml;
   return card;
