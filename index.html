@@ -432,6 +432,7 @@ body{font-family:system-ui,sans-serif;background:#0d1117;color:#e6edf3;min-heigh
           <button class="lb-subtab-btn" id="lbsub-archive" onclick="showLbSubtab('archive')">Season Archive</button>
         </div>
         <div id="lb-sub-weekly">
+          <div id="lb-standings-week-picker" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
           <div class="card">
             <h2>Week <span id="lb-week-num"></span> Standings</h2>
             <p class="tap-hint">Tap any player's name to see their stats and pick history</p>
@@ -533,6 +534,7 @@ var sbFilter           = 'all'; // 'all' or 'mine'
 var statsWeek          = null;
 var statsView          = 'week'; // 'week' or 'team'
 var teamListData       = null;
+var lbStandingsWeek    = null; // selected week in Weekly Standings
 
 window.onload = function() {
   var saved = sessionStorage.getItem('tgp_player');
@@ -640,6 +642,49 @@ function showLbSubtab(tab) {
     document.getElementById('lbsub-'+t).classList.toggle('active', t===tab);
   });
   if (tab==='archive'&&!archiveLoaded) { loadSeasonArchive(); }
+  if (tab==='weekly'&&lbStandingsWeek===null) { buildStandingsWeekPicker(); }
+}
+
+function buildStandingsWeekPicker() {
+  // On first open, build picker from the current week number already in the h2
+  var currentWeekEl = document.getElementById('lb-week-num');
+  var currentWeek   = currentWeekEl ? parseInt(currentWeekEl.textContent) : 1;
+  if (!currentWeek || currentWeek < 1) { return; }
+  lbStandingsWeek = currentWeek;
+  renderStandingsWeekPicker(currentWeek, currentWeek);
+}
+
+function renderStandingsWeekPicker(currentWeek, activeWeek) {
+  var el = document.getElementById('lb-standings-week-picker');
+  if (!el || currentWeek <= 1) { return; } // no picker needed if only one week
+  var html = '';
+  for (var w = 1; w <= currentWeek; w++) {
+    var isActive = w === activeWeek;
+    html += '<button class="stats-week-btn' + (isActive ? ' active' : '') + '" ' +
+      'onclick="loadWeekStandings(' + w + ')">' +
+      'Week ' + w + (w === currentWeek ? ' 🔴' : '') +
+      '</button>';
+  }
+  el.innerHTML = html;
+}
+
+function loadWeekStandings(week) {
+  lbStandingsWeek = week;
+  var currentWeek = parseInt(document.getElementById('lb-week-num').textContent) || week;
+  renderStandingsWeekPicker(currentWeek, week);
+  // Current week data already loaded in the main leaderboard response
+  if (week === currentWeek) {
+    // re-render from cached leaderboard data if available
+    var cached = window._lbCache;
+    if (cached) { renderWeeklyGrouped('lb-weekly', cached.weeklyPlayers); document.getElementById('lb-week-num').textContent = week; return; }
+  }
+  document.getElementById('lb-weekly').innerHTML = '<div class="spinner">Loading...</div>';
+  api({ action:'getWeekStandings', playerId:player.playerId, week:week }, function(res) {
+    if (!res.success) { document.getElementById('lb-weekly').innerHTML = '<p style="color:#f85149">Could not load.</p>'; return; }
+    document.getElementById('lb-week-num').textContent = res.week;
+    renderWeeklyGrouped('lb-weekly', res.weeklyPlayers);
+    renderStandingsWeekPicker(res.currentWeek, res.week);
+  });
 }
 
 // ── Modal ─────────────────────────────────────────────────────
@@ -982,6 +1027,8 @@ function loadLeaderboard() {
     document.getElementById('lb-week-num').textContent=res.week;
     renderPrevWeekBanner(res);
     if (res.potAmount) { document.getElementById('lb-pot-amount').textContent='$'+Number(res.potAmount).toLocaleString(); document.getElementById('lb-pot-week').textContent=res.week; document.getElementById('lb-pot').classList.remove('hidden'); }
+    window._lbCache = res; // cache for week picker instant re-renders
+    lbStandingsWeek = null; // reset so picker rebuilds on next subtab visit
     renderFieldOnLeaderboard(res.weeklyPlayers);
     renderWeeklyGrouped('lb-weekly', res.weeklyPlayers);
     renderSeasonStandings('lb-season', res.season);
